@@ -13,7 +13,7 @@ class PokemonAPISync(models.Model):
     # This method gets a single Pokemon from the API using its name or ID
     @api.model
     def _get_pokemon_from_api(self, pokemon_name_or_id):
-        print(pokemon_name_or_id)  # Debug print - this helps see what we're requesting
+        #print(pokemon_name_or_id)  # Debug print - this helps see what we're requesting
         try:
             # Make a GET request to the Pokemon API
             url = f"https://pokeapi.co/api/v2/pokemon/{pokemon_name_or_id.lower()}"

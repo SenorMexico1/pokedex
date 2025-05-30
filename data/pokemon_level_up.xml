@@ -23,11 +23,15 @@ if record.experience >= (100 * record.level):
     record.experience = 0
     record.level_up()
     
-    # Show notification to the trainer
-    record.trainer_id.user_id.notify_info(
-        title="Pokemon Level Up!",
-        message="%s reached level %s!" % (record.nickname or record.pokemon_id.name, record.level)
-    )
+    # Since we're repurposing res.partner as trainers (per README hint),
+    # we'll use the existing user_ids field to notify any linked users
+    if record.trainer_id.user_ids:
+        # Get the first user linked to this trainer/partner
+        user = record.trainer_id.user_ids[0]
+        user.notify_info(
+            title="Pokemon Level Up!",
+            message="%s reached level %s!" % (record.nickname or record.pokemon_id.name, record.level)
+        )
             </field>
         </record>
     </data>
