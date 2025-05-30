@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Manual action: Sync all Pokemon types from PokeAPI -->
+        <record id="action_sync_all_types" model="ir.actions.server">
+            <field name="name">Import All Pokemon Types from PokeAPI</field>
+            <field name="model_id" ref="model_pokedex_api_sync"/>
+            <field name="state">code</field>
+            <field name="code">
+# This action imports all Pokemon types and their relationships from PokeAPI
+api_sync = env['pokedex.api.sync']
+api_sync.sync_all_types()
+            </field>
+        </record>
+        
+        <!-- Manual action: Import Generation 1 Pokemon -->
+        <record id="action_sync_pokemon_batch" model="ir.actions.server">
+            <field name="name">Import Generation 1 Pokemon (1-151)</field>
+            <field name="model_id" ref="model_pokedex_api_sync"/>
+            <field name="state">code</field>
+            <field name="code">
+# This action imports the first 151 Pokemon from PokeAPI
+# It may take several minutes to complete
+api_sync = env['pokedex.api.sync']
+api_sync.sync_pokemon_batch(1, 151)
+            </field>
+        </record>
+    </data>
+</odoo>
