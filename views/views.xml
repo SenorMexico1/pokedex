@@ -258,7 +258,7 @@
       </field>
     </record>
     
-    <!-- Trainer Views (Extended from res.partner) -->
+<!-- Trainer Views (Extended from res.partner) -->
     <record model="ir.ui.view" id="pokedex_trainer_form">
       <field name="name">pokedex.trainer.form</field>
       <field name="model">res.partner</field>
@@ -272,8 +272,8 @@
               <field name="pokemon_count" attrs="{'invisible': [('is_trainer', '=', False)]}"/>
             </group>
             <field name="trainer_pokemon_ids" attrs="{'invisible': [('is_trainer', '=', False)]}"/>
-            <button name="%(pokedex_app.pokedex_catch_wizard_action)d" string="Catch Pokemon" 
-                    type="action" class="oe_highlight" 
+            <button name="action_open_catch_wizard" string="Catch Pokemon" 
+                    type="object" class="oe_highlight" 
                     attrs="{'invisible': [('is_trainer', '=', False)]}"/>
           </page>
         </xpath>

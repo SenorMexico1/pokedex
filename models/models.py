@@ -67,6 +67,17 @@ class Trainer(models.Model):
     def _compute_pokemon_count(self):
         for trainer in self:
             trainer.pokemon_count = len(trainer.trainer_pokemon_ids)
+    
+    def action_open_catch_wizard(self):
+        """Open the catch Pokemon wizard"""
+        return {
+            'name': 'Catch Pokemon',
+            'type': 'ir.actions.act_window',
+            'res_model': 'pokedex.catch.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_trainer_id': self.id}
+        }
             
 class TrainerPokemon(models.Model):
     _name = 'pokedex.trainer.pokemon'
