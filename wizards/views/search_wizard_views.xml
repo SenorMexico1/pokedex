@@ -36,7 +36,7 @@
         <!-- Menu item for searching Pokemon -->
         <menuitem id="menu_search_pokemon_wizard"
                   name="Search/Import Pokemon"
-                  parent="pokedex_pokemon_menu"
+                  parent="pokedex_app.pokedex_pokemon_menu"
                   action="pokedex_search_wizard_action"
                   sequence="5"/>
     </data>

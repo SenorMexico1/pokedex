@@ -43,7 +43,7 @@
         <!-- Menu item for catching Pokemon -->
         <menuitem id="menu_catch_pokemon_wizard"
                   name="Catch Pokemon"
-                  parent="pokedex_pokemon_menu"
+                  parent="pokedex_app.pokedex_pokemon_menu"
                   action="pokedex_catch_wizard_action"
                   sequence="10"/>
     </data>
