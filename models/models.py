@@ -43,6 +43,14 @@ class Pokemon(models.Model):
     image_url = fields.Char(string='Pokemon Image URL')
     description = fields.Text(string='Description')
     
+    def action_refresh_from_api(self):
+        """Refresh Pokemon data from PokeAPI"""
+        api_sync = self.env['pokedex.api.sync']
+        for pokemon in self:
+            # Re-import the Pokemon data
+            api_sync.import_pokemon(pokemon.pokedex_number)
+        return True
+    
     
 class Trainer(models.Model):
     _inherit = 'res.partner'
