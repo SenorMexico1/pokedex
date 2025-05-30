@@ -7,16 +7,14 @@
             <field name="model">pokedex.catch.wizard</field>
             <field name="arch" type="xml">
                 <form string="Catch Pokemon">
+                    <field name="catch_success" invisible="1"/>
                     <group>
                         <field name="trainer_id" invisible="1"/>
                         <field name="pokemon_id" options="{'no_create': True}"/>
                     </group>
                     <group attrs="{'invisible': [('pokemon_id', '=', False)]}">
                         <div class="text-center">
-                            <img t-if="pokemon_image" 
-                                 t-att-src="pokemon_image" 
-                                 style="max-width: 200px; max-height: 200px;"
-                                 class="img-fluid"/>
+                            <field name="pokemon_image" widget="image" class="oe_avatar" nolabel="1"/>
                         </div>
                         <field name="pokemon_type" readonly="1"/>
                     </group>
