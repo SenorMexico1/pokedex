@@ -328,10 +328,8 @@
               
     <!-- API Sync menus -->
     <menuitem name="API Sync" id="pokedex_api_menu" parent="pokedex_config_menu"/>
-    <menuitem name="Sync Types" id="pokedex_sync_types_menu" 
-          parent="pokedex_api_menu" action="pokedex_app.action_sync_all_types"/>
+    <menuitem name="Sync Types" id="pokedex_sync_types_menu" parent="pokedex_api_menu" action="action_sync_all_types"/>
 
-    <menuitem name="Sync Pokemon" id="pokedex_sync_pokemon_menu" 
-          parent="pokedex_api_menu" action="pokedex_app.action_sync_pokemon_batch"/>
+    <menuitem name="Sync Pokemon" id="pokedex_sync_pokemon_menu" parent="pokedex_api_menu" action="action_sync_pokemon_batch"/>
   </data>
 </odoo>
