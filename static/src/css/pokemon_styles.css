@@ -1,0 +1,72 @@
+/* Pokemon Image Widget Styles */
+.pokemon-image {
+    max-width: 200px;
+    max-height: 200px;
+    width: auto;
+    height: auto;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    margin: 10px;
+}
+
+/* Pokemon Kanban Card Styles */
+.o_pokemon_kanban {
+    width: 280px;
+    margin: 5px;
+}
+
+.o_pokemon_kanban .o_kanban_image_fill_left {
+    width: 100px;
+    height: 100px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+/* Pokemon Type Badge Colors */
+.badge-fire { background-color: #EE8130; color: white; }
+.badge-water { background-color: #6390F0; color: white; }
+.badge-grass { background-color: #7AC74C; color: white; }
+.badge-electric { background-color: #F7D02C; color: black; }
+.badge-psychic { background-color: #F95587; color: white; }
+.badge-ice { background-color: #96D9D6; color: black; }
+.badge-dragon { background-color: #6F35FC; color: white; }
+.badge-dark { background-color: #705746; color: white; }
+.badge-fairy { background-color: #D685AD; color: white; }
+.badge-normal { background-color: #A8A77A; color: white; }
+.badge-fighting { background-color: #C22E28; color: white; }
+.badge-flying { background-color: #A98FF3; color: white; }
+.badge-poison { background-color: #A33EA1; color: white; }
+.badge-ground { background-color: #E2BF65; color: black; }
+.badge-rock { background-color: #B6A136; color: white; }
+.badge-bug { background-color: #A6B91A; color: white; }
+.badge-ghost { background-color: #735797; color: white; }
+.badge-steel { background-color: #B7B7CE; color: black; }
+
+/* Trainer Pokemon Form */
+.o_form_view .o_group .o_pokemon_stats {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    margin-top: 10px;
+}
+
+/* Pokemon catch wizard styles */
+.o_wizard_pokemon_image {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.o_wizard_pokemon_image img {
+    max-width: 250px;
+    max-height: 250px;
+}
+
+/* Pokemon list decoration */
+.o_list_view .o_data_row.text-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.o_list_view .o_data_row.text-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+}
