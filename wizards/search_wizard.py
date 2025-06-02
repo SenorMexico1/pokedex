@@ -150,7 +150,7 @@ class PokemonSearchWizard(models.TransientModel):
             })
             raise UserError(f"Import failed: {str(e)}")
     
-    def _refresh_wizard(self):
+    def refresh_wizard(self):
         """Return action to refresh the wizard and show updated data"""
         return {
             'type': 'ir.actions.act_window',
