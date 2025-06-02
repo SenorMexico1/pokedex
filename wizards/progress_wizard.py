@@ -129,9 +129,9 @@ class PokemonSearchWizard(models.TransientModel):
             # Final update
             final_count = self.env['pokedex.pokemon'].search_count([])
             final_message = f"\n\n=== IMPORT COMPLETE ===\n" \
-                          f"Successfully imported: {imported}\n" \
-                          f"Failed: {failed}\n" \
-                          f"Total Pokemon in database: {final_count}"
+                          f"✓ Successfully imported: {imported}\n" \
+                          f"✗ Failed: {failed}\n" \
+                          f"📊 Total Pokemon in database: {final_count}"
             
             self.write({
                 'is_importing': False,
@@ -150,7 +150,7 @@ class PokemonSearchWizard(models.TransientModel):
             })
             raise UserError(f"Import failed: {str(e)}")
     
-    def _refresh_wizard(self):
+    def refresh_wizard(self):
         """Return action to refresh the wizard and show updated data"""
         return {
             'type': 'ir.actions.act_window',

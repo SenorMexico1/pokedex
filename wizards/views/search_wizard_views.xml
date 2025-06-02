@@ -1,25 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <!-- Search Wizard Form View -->
+        <!-- Search Wizard Form View with Progress -->
         <record id="pokedex_search_wizard_form" model="ir.ui.view">
             <field name="name">pokedex.search.wizard.form</field>
             <field name="model">pokedex.search.wizard</field>
             <field name="arch" type="xml">
-                <form string="Search Pokemon">
-                    <group>
-                        <field name="search_term" placeholder="e.g., 'pikachu' or '25'"/>
-                    </group>
-                    <group attrs="{'invisible': [('search_message', '=', False)]}">
-                        <field name="search_message" readonly="1" nolabel="1"/>
-                    </group>
+                <form string="Search/Import Pokemon">
+                    <sheet>
+                        <!-- Hidden fields -->
+                        <field name="is_importing" invisible="1"/>
+                        
+                        <!-- Search Section -->
+                        <group string="Search Pokemon" attrs="{'invisible': [('is_importing', '=', True)]}">
+                            <field name="search_term" placeholder="e.g., 'pikachu' or '25'"/>
+                        </group>
+                        
+                        <!-- Progress Bar - Shows during import -->
+                        <group attrs="{'invisible': [('is_importing', '=', False)]}">
+                            <field name="import_progress" widget="progressbar" nolabel="1"/>
+                        </group>
+                        
+                        <!-- Status Message -->
+                        <group attrs="{'invisible': [('search_message', '=', False)]}">
+                            <div class="alert alert-info" role="alert">
+                                <field name="search_message" readonly="1" nolabel="1"/>
+                            </div>
+                        </group>
+                        
+                        <!-- Import Log - Shows during and after import -->
+                        <group string="Import Details" attrs="{'invisible': [('import_log', '=', False)]}">
+                            <field name="import_log" readonly="1" nolabel="1" 
+                                   widget="text" 
+                                   style="font-family: monospace; background-color: #f5f5f5; padding: 10px; height: 300px; overflow-y: auto;"/>
+                        </group>
+                    </sheet>
+                    
                     <footer>
-                        <button name="search_pokemon" string="Search" 
-                                type="object" class="btn-primary"/>
-                        <button name="import_batch" string="Import ALL Pokemon (1000+)" 
-                                type="object" class="btn-warning"
-                                confirm="This will import ALL Pokemon from the PokeAPI. This may take 15-30 minutes. Continue?"/>
-                        <button string="Cancel" class="btn-secondary" special="cancel"/>
+                        <!-- Search button - only visible when not importing -->
+                        <button name="search_pokemon" 
+                                string="Search" 
+                                type="object" 
+                                class="btn-primary"
+                                attrs="{'invisible': [('is_importing', '=', True)]}"/>
+                        
+                        <!-- Import button - only visible when not importing -->
+                        <button name="import_batch" 
+                                string="Import ALL Pokemon (1000+)" 
+                                type="object" 
+                                class="btn-warning"
+                                attrs="{'invisible': [('is_importing', '=', True)]}"/>
+                        
+                        <!-- Refresh button - only visible during import (NO UNDERSCORE) -->
+                        <button name="refresh_wizard" 
+                                string="Refresh Progress" 
+                                type="object" 
+                                class="btn-info"
+                                attrs="{'invisible': [('is_importing', '=', False)]}"/>
+                        
+                        <!-- Close button -->
+                        <button string="Close" 
+                                class="btn-secondary" 
+                                special="cancel"/>
                     </footer>
                 </form>
             </field>
@@ -32,12 +74,5 @@
             <field name="view_mode">form</field>
             <field name="target">new</field>
         </record>
-        
-        <!-- Menu item for searching Pokemon - parent is now pokedex_tools_menu -->
-        <menuitem id="menu_search_pokemon_wizard"
-                  name="Search/Import Pokemon"
-                  parent="pokedex_tools_menu"
-                  action="pokedex_search_wizard_action"
-                  sequence="5"/>
     </data>
 </odoo>

@@ -10,10 +10,13 @@
         'data/scheduled_xp.xml',
         'views/templates.xml',
         'data/api_actions.xml',
-        'views/views.xml',
+        # Load wizard views FIRST
         'wizards/views/import_wizard_views.xml',
         'wizards/views/catch_wizard_views.xml',
         'wizards/views/search_wizard_views.xml',
+        'wizards/views/progress_wizard_views.xml',
+        # Then load main views that reference wizard actions
+        'views/views.xml',
         'data/pokemon_level_up.xml',
     ],
     'installable': True,
