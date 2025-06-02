@@ -284,6 +284,22 @@
     </record>
     
     <!-- Actions and Menus -->
+    <!-- UPDATED: Added context to group by type by default -->
+    <record model="ir.actions.act_window" id="pokedex_pokemon_action">
+      <field name="name">Pokemon</field>
+      <field name="res_model">pokedex.pokemon</field>
+      <field name="view_mode">kanban,tree,form,graph</field>
+      <field name="context">{'search_default_groupby_type': 1}</field>
+      <field name="help" type="html">
+        <p class="o_view_nocontent_smiling_face">
+          No Pokemon in your Pokedex yet!
+        </p>
+        <p>
+          Click the "Import Pokemon" button in the Tools menu to get started.
+        </p>
+      </field>
+    </record>
+    
     <record model="ir.actions.act_window" id="pokedex_type_action">
       <field name="name">Pokemon Types</field>
       <field name="res_model">pokedex.type</field>
@@ -296,40 +312,119 @@
       <field name="view_mode">tree,form</field>
     </record>
     
-    <record model="ir.actions.act_window" id="pokedex_pokemon_action">
-      <field name="name">Pokemon</field>
-      <field name="res_model">pokedex.pokemon</field>
-      <field name="view_mode">kanban,tree,form,graph</field>
-    </record>
-    
     <record model="ir.actions.act_window" id="pokedex_trainer_pokemon_action">
       <field name="name">Trainer Pokemon</field>
       <field name="res_model">pokedex.trainer.pokemon</field>
       <field name="view_mode">tree,form</field>
     </record>
     
-    <!-- Main Menu -->
-    <menuitem name="Pokedex" id="pokedex_menu_root"/>
+    <!-- Trainers Action -->
+    <record model="ir.actions.act_window" id="pokedex_trainers_action">
+      <field name="name">Trainers</field>
+      <field name="res_model">res.partner</field>
+      <field name="view_mode">tree,form</field>
+      <field name="domain">[('is_trainer', '=', True)]</field>
+      <field name="context">{'default_is_trainer': True}</field>
+    </record>
     
-    <!-- First level menu items -->
-    <menuitem name="Pokemon" id="pokedex_pokemon_menu" parent="pokedex_menu_root"/>
-    <menuitem name="Trainers" id="pokedex_trainer_menu" parent="pokedex_menu_root"/>
-    <menuitem name="Configuration" id="pokedex_config_menu" parent="pokedex_menu_root"/>
+    <!-- Main Menu - UPDATED: Added action to open Pokemon list by default -->
+    <menuitem name="Pokedex" 
+              id="pokedex_menu_root"
+              action="pokedex_pokemon_action"/>
+    
+    <!-- First level menu items - REORGANIZED -->
+    <menuitem name="Pokemon" 
+              id="pokedex_pokemon_menu" 
+              parent="pokedex_menu_root"
+              sequence="10"/>
+              
+    <menuitem name="Trainers" 
+              id="pokedex_trainer_menu" 
+              parent="pokedex_menu_root"
+              sequence="20"/>
+              
+    <!-- NEW: Tools menu for import/search functions -->
+    <menuitem name="Tools" 
+              id="pokedex_tools_menu" 
+              parent="pokedex_menu_root"
+              sequence="50"/>
+              
+    <menuitem name="Configuration" 
+              id="pokedex_config_menu" 
+              parent="pokedex_menu_root"
+              sequence="100"/>
     
     <!-- Second level menu items -->
-    <menuitem name="Pokemon List" id="pokedex_pokemon_list_menu" 
-              parent="pokedex_pokemon_menu" action="pokedex_pokemon_action"/>
-    <menuitem name="Trainer Pokemon" id="pokedex_trainer_pokemon_menu" 
-              parent="pokedex_trainer_menu" action="pokedex_trainer_pokemon_action"/>
-    <menuitem name="Types" id="pokedex_type_menu" 
-              parent="pokedex_config_menu" action="pokedex_type_action"/>
-    <menuitem name="Skills" id="pokedex_skill_menu" 
-              parent="pokedex_config_menu" action="pokedex_skill_action"/>
+    <!-- Pokemon submenu -->
+    <menuitem name="All Pokemon" 
+              id="pokedex_pokemon_list_menu" 
+              parent="pokedex_pokemon_menu" 
+              action="pokedex_pokemon_action"
+              sequence="10"/>
               
-    <!-- API Sync menus -->
-    <menuitem name="API Sync" id="pokedex_api_menu" parent="pokedex_config_menu"/>
-    <menuitem name="Sync Types" id="pokedex_sync_types_menu" parent="pokedex_api_menu" action="action_sync_all_types"/>
+    <!-- NEW: Moved catch wizard under Pokemon menu -->
+    <menuitem id="menu_catch_pokemon_wizard"
+              name="Catch Pokemon"
+              parent="pokedex_pokemon_menu"
+              action="pokedex_catch_wizard_action"
+              sequence="20"/>
+    
+    <!-- Trainers submenu -->
+    <menuitem name="All Trainers" 
+              id="pokedex_all_trainers_menu" 
+              parent="pokedex_trainer_menu" 
+              action="pokedex_trainers_action"
+              sequence="10"/>
+              
+    <menuitem name="Trainer Pokemon" 
+              id="pokedex_trainer_pokemon_menu" 
+              parent="pokedex_trainer_menu" 
+              action="pokedex_trainer_pokemon_action"
+              sequence="20"/>
+    
+    <!-- Tools submenu - MOVED search/import here -->
+    <menuitem id="menu_search_pokemon_wizard"
+              name="Search Pokemon"
+              parent="pokedex_tools_menu"
+              action="pokedex_search_wizard_action"
+              sequence="10"/>
+              
+    <!-- This will be for the new import wizard when you add it -->
+    <!-- <menuitem id="menu_import_pokemon_wizard"
+              name="Import Pokemon"  
+              parent="pokedex_tools_menu"
+              action="pokedex_import_wizard_action"
+              sequence="20"/> -->
+    
+    <!-- Configuration submenu -->
+    <menuitem name="Types" 
+              id="pokedex_type_menu" 
+              parent="pokedex_config_menu" 
+              action="pokedex_type_action"
+              sequence="10"/>
+              
+    <menuitem name="Skills" 
+              id="pokedex_skill_menu" 
+              parent="pokedex_config_menu" 
+              action="pokedex_skill_action"
+              sequence="20"/>
+    
+    <!-- API Sync submenu under Configuration -->
+    <menuitem name="API Sync" 
+              id="pokedex_api_menu" 
+              parent="pokedex_config_menu"
+              sequence="50"/>
+              
+    <menuitem name="Sync Types" 
+              id="pokedex_sync_types_menu" 
+              parent="pokedex_api_menu" 
+              action="action_sync_all_types"
+              sequence="10"/>
 
-    <menuitem name="Sync Pokemon" id="pokedex_sync_pokemon_menu" parent="pokedex_api_menu" action="action_sync_pokemon_batch"/>
+    <menuitem name="Sync Pokemon (Legacy)" 
+              id="pokedex_sync_pokemon_menu" 
+              parent="pokedex_api_menu" 
+              action="action_sync_pokemon_batch"
+              sequence="20"/>
   </data>
 </odoo>

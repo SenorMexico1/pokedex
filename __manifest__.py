@@ -11,6 +11,7 @@
         'views/templates.xml',
         'data/api_actions.xml',
         'views/views.xml',
+        'wizards/views/import_wizard_views.xml',
         'wizards/views/catch_wizard_views.xml',
         'wizards/views/search_wizard_views.xml',
         'data/pokemon_level_up.xml',

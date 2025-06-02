@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Import Wizard Form View -->
+        <record id="pokedex_import_wizard_form" model="ir.ui.view">
+            <field name="name">pokedex.import.wizard.form</field>
+            <field name="model">pokedex.import.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Import Pokemon from PokeAPI">
+                    <sheet>
+                        <!-- Stats at the top -->
+                        <group col="4">
+                            <field name="total_pokemon" string="Pokemon in Database"/>
+                            <field name="missing_count" string="Missing Pokemon"/>
+                        </group>
+                        
+                        <separator string="Import Options"/>
+                        
+                        <group>
+                            <field name="import_option" widget="radio"/>
+                        </group>
+                        
+                        <!-- Custom range fields, only visible when custom is selected -->
+                        <group attrs="{'invisible': [('import_option', '!=', 'custom')]}" col="4">
+                            <field name="start_id"/>
+                            <field name="end_id"/>
+                        </group>
+                        
+                        <!-- Import status message -->
+                        <group attrs="{'invisible': [('import_message', '=', False)]}">
+                            <separator string="Import Status"/>
+                            <field name="import_message" nolabel="1" readonly="1" 
+                                   style="background-color: #f8f9fa; padding: 10px; border-radius: 5px;"/>
+                        </group>
+                        
+                        <!-- Help text -->
+                        <group>
+                            <div class="alert alert-info" role="alert">
+                                <strong>Tips:</strong>
+                                <ul>
+                                    <li>Use "Only Missing Pokemon" to import only Pokemon you don't have</li>
+                                    <li>Generation imports will import all Pokemon from that generation</li>
+                                    <li>Custom range allows you to specify exact Pokemon IDs to import</li>
+                                    <li>The import process respects API rate limits to avoid errors</li>
+                                </ul>
+                            </div>
+                        </group>
+                    </sheet>
+                    
+                    <footer>
+                        <button name="action_check_missing" 
+                                string="Check Missing" 
+                                type="object" 
+                                class="btn-secondary"
+                                icon="fa-search"/>
+                        <button name="action_import" 
+                                string="Import Pokemon" 
+                                type="object" 
+                                class="btn-primary"
+                                icon="fa-download"
+                                confirm="This will import Pokemon from the API. This process may take several minutes. Continue?"/>
+                        <button string="Cancel" 
+                                class="btn-secondary" 
+                                special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+        
+        <!-- Action to open the import wizard -->
+        <record id="pokedex_import_wizard_action" model="ir.actions.act_window">
+            <field name="name">Import Pokemon</field>
+            <field name="res_model">pokedex.import.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+        
+        <!-- Welcome Dashboard View -->
+        <record id="pokedex_welcome_dashboard" model="ir.ui.view">
+            <field name="name">pokedex.welcome.dashboard</field>
+            <field name="model">pokedex.pokemon</field>
+            <field name="arch" type="xml">
+                <form string="Welcome to Pokedex" create="false" edit="false">
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>Welcome to your Pokedex!</h1>
+                        </div>
+                        <div class="alert alert-warning" role="alert" 
+                             attrs="{'invisible': [('id', '!=', False)]}">
+                            <h4 class="alert-heading">No Pokemon Found!</h4>
+                            <p>It looks like you haven't imported any Pokemon yet.</p>
+                            <hr/>
+                            <p class="mb-0">
+                                <button name="%(pokedex_import_wizard_action)d" 
+                                        string="Import Pokemon Now" 
+                                        type="action" 
+                                        class="btn-primary"/>
+                            </p>
+                        </div>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+    </data>
+</odoo>
