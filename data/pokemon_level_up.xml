@@ -1,16 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <!-- Event-based trigger: When Pokemon gains experience -->
-        <record id="trigger_pokemon_level_up" model="base.automation">
-            <field name="name">Pokemon Level Up Trigger</field>
-            <field name="model_id" ref="model_pokedex_trainer_pokemon"/>
-            <field name="trigger">on_write</field>
-            <field name="filter_domain">[('experience', '>=', 100)]</field>
-            <field name="action_server_id" ref="action_level_up_pokemon"/>
-        </record>
-        
-        <!-- Action that runs when the trigger fires -->
+        <!-- Action that runs when the trigger fires - using write() method instead of direct assignment -->
         <record id="action_level_up_pokemon" model="ir.actions.server">
             <field name="name">Level Up Pokemon Action</field>
             <field name="model_id" ref="model_pokedex_trainer_pokemon"/>
@@ -19,8 +10,8 @@
             <field name="code">
 # Check if Pokemon has enough XP to level up
 if record.experience >= (100 * record.level):
-    # Reset experience and increase level
-    record.experience = 0
+    # Reset experience and increase level using write() method
+    record.write({'experience': 0})
     record.level_up()
     
     # Since we're repurposing res.partner as trainers (per README hint),
@@ -30,9 +21,18 @@ if record.experience >= (100 * record.level):
         user = record.trainer_id.user_ids[0]
         user.notify_info(
             title="Pokemon Level Up!",
-            message="%s reached level %s!" % (record.nickname or record.pokemon_id.name, record.level)
+            message="%s reached level %s!" % (record.nickname or record.pokemon_id.name, record.level + 1)
         )
             </field>
+        </record>
+        
+        <!-- Event-based trigger: When Pokemon gains experience -->
+        <record id="trigger_pokemon_level_up" model="base.automation">
+            <field name="name">Pokemon Level Up Trigger</field>
+            <field name="model_id" ref="model_pokedex_trainer_pokemon"/>
+            <field name="trigger">on_write</field>
+            <field name="filter_domain">[('experience', '>=', 100)]</field>
+            <field name="action_server_id" ref="action_level_up_pokemon"/>
         </record>
     </data>
 </odoo>
