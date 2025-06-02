@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <!-- Debug Catch Wizard Form View -->
+        <!-- Fixed Catch Wizard Form View -->
         <record id="pokedex_catch_wizard_form" model="ir.ui.view">
             <field name="name">pokedex.catch.wizard.form</field>
             <field name="model">pokedex.catch.wizard</field>
@@ -14,12 +14,6 @@
                     <sheet>
                         <!-- Hidden trainer field -->
                         <field name="trainer_id" invisible="1"/>
-                        
-                        <!-- DEBUG INFO -->
-                        <group string="DEBUG" style="background-color: #ffeeee;">
-                            <field name="has_attempted" readonly="1"/>
-                            <field name="debug_info" readonly="1" widget="text"/>
-                        </group>
                         
                         <!-- Wild Pokemon Encounter -->
                         <div class="text-center">
@@ -65,7 +59,7 @@
                         </group>
                         
                         <!-- Result Message -->
-                        <group>
+                        <group attrs="{'invisible': [('result_message', '=', False)]}">
                             <div class="alert alert-info" role="alert" style="text-align: center;">
                                 <field name="result_message" readonly="1" nolabel="1" 
                                        style="font-size: 18px; font-weight: bold;"/>
@@ -74,17 +68,17 @@
                     </sheet>
                     
                     <footer>
-                        <!-- Always show both buttons for debugging -->
-                        <button name="attempt_catch" 
-                                string="Throw Pokeball!" 
-                                type="object" 
-                                class="btn-primary"
+                        <!-- Throw Pokeball button - only visible if not attempted -->
+                        <button name="attempt_catch" string="Throw Pokeball!" 
+                                type="object" class="btn-primary"
+                                attrs="{'invisible': [('has_attempted', '=', True)]}"
                                 icon="fa-bullseye"/>
                         
-                        <button name="find_new_pokemon" 
-                                string="Find Another Pokemon" 
-                                type="object" 
-                                class="btn-secondary"
+                        <!-- Find New Pokemon button - only visible after attempt -->
+                        <button name="find_new_pokemon" string="Find Another Pokemon" 
+                                type="object" class="btn-primary"
+                                attrs="{'invisible': [('has_attempted', '=', False)]}"
+                                confirm="This will close the current encounter and find a new Pokemon. Continue?"
                                 icon="fa-search"/>
                         
                         <button string="Close" class="btn-secondary" special="cancel"/>
@@ -93,12 +87,20 @@
             </field>
         </record>
         
-        <!-- Action -->
+        <!-- Action remains the same -->
         <record id="pokedex_catch_wizard_action" model="ir.actions.act_window">
             <field name="name">Catch Pokemon</field>
             <field name="res_model">pokedex.catch.wizard</field>
             <field name="view_mode">form</field>
             <field name="target">new</field>
+            <field name="context">{'default_trainer_id': active_id}</field>
         </record>
+        
+        <!-- Menu item remains the same -->
+        <menuitem id="menu_catch_pokemon_wizard"
+                  name="Catch Pokemon"
+                  parent="pokedex_pokemon_menu"
+                  action="pokedex_catch_wizard_action"
+                  sequence="10"/>
     </data>
 </odoo>
