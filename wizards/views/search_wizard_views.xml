@@ -46,7 +46,7 @@
                         
                         <!-- Import button - only visible when not importing -->
                         <button name="import_batch" 
-                                string="Import ALL Pokemon (1000+)" 
+                                string="Import ALL Pokemon" 
                                 type="object" 
                                 class="btn-warning"
                                 attrs="{'invisible': [('is_importing', '=', True)]}"/>

@@ -1,37 +1,92 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <!-- Catch Wizard Form View -->
+        <!-- Updated Catch Wizard Form View -->
         <record id="pokedex_catch_wizard_form" model="ir.ui.view">
             <field name="name">pokedex.catch.wizard.form</field>
             <field name="model">pokedex.catch.wizard</field>
             <field name="arch" type="xml">
-                <form string="Catch Pokemon">
+                <form string="Wild Pokemon Encounter!">
                     <field name="catch_success" invisible="1"/>
-                    <group>
+                    <field name="has_attempted" invisible="1"/>
+                    <field name="is_legendary" invisible="1"/>
+                    
+                    <sheet>
+                        <!-- Hidden trainer field -->
                         <field name="trainer_id" invisible="1"/>
-                        <field name="pokemon_id" options="{'no_create': True}"/>
-                    </group>
-                    <group attrs="{'invisible': [('pokemon_id', '=', False)]}">
+                        
+                        <!-- Wild Pokemon Encounter -->
                         <div class="text-center">
-                            <field name="pokemon_image" widget="image" class="oe_avatar" nolabel="1"/>
+                            <h2 attrs="{'invisible': [('pokemon_id', '=', False)]}">
+                                <field name="pokemon_id" readonly="1" nolabel="1" 
+                                       options="{'no_open': True}"
+                                       style="font-size: 24px; font-weight: bold;"/>
+                            </h2>
+                            
+                            <!-- Legendary indicator -->
+                            <div attrs="{'invisible': [('is_legendary', '=', False)]}" 
+                                 style="color: #FFD700; font-size: 18px; margin-bottom: 10px;">
+                                ⭐ LEGENDARY POKEMON ⭐
+                            </div>
                         </div>
-                        <field name="pokemon_type" readonly="1"/>
-                    </group>
-                    <group attrs="{'invisible': [('result_message', '=', False)]}">
-                        <field name="result_message" readonly="1" nolabel="1"/>
-                    </group>
+                        
+                        <!-- Pokemon Image -->
+                        <div class="text-center" attrs="{'invisible': [('pokemon_id', '=', False)]}">
+                            <field name="pokemon_image" widget="image" class="oe_avatar" 
+                                   nolabel="1" style="max-width: 300px; max-height: 300px;"/>
+                        </div>
+                        
+                        <!-- Pokemon Info in two columns -->
+                        <group col="2" attrs="{'invisible': [('pokemon_id', '=', False)]}">
+                            <group>
+                                <field name="pokemon_type" readonly="1" string="Type"/>
+                                <div class="text-muted">
+                                    <field name="pokemon_stats_display" readonly="1" nolabel="1"/>
+                                </div>
+                            </group>
+                            <group>
+                                <!-- Catch Rate Display -->
+                                <div style="text-align: center; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
+                                    <div style="font-size: 14px; color: #6c757d;">Catch Rate</div>
+                                    <div style="font-size: 36px; font-weight: bold;">
+                                        <field name="catch_rate" readonly="1" nolabel="1" style="display: inline;"/>%
+                                    </div>
+                                    <div style="margin-top: 10px;" attrs="{'invisible': [('is_legendary', '=', False)]}">
+                                        <span class="badge badge-warning">Legendary Pokemon are harder to catch!</span>
+                                    </div>
+                                </div>
+                            </group>
+                        </group>
+                        
+                        <!-- Result Message -->
+                        <group attrs="{'invisible': [('result_message', '=', False)]}">
+                            <div class="alert alert-info" role="alert" style="text-align: center;">
+                                <field name="result_message" readonly="1" nolabel="1" 
+                                       style="font-size: 18px; font-weight: bold;"/>
+                            </div>
+                        </group>
+                    </sheet>
+                    
                     <footer>
+                        <!-- Throw Pokeball button - only visible if not attempted -->
                         <button name="attempt_catch" string="Throw Pokeball!" 
                                 type="object" class="btn-primary"
-                                attrs="{'invisible': [('catch_success', '=', True)]}"/>
+                                attrs="{'invisible': [('has_attempted', '=', True)]}"
+                                icon="fa-bullseye"/>
+                        
+                        <!-- Find New Pokemon button - only visible after attempt -->
+                        <button name="find_new_pokemon" string="Find Another Pokemon" 
+                                type="object" class="btn-primary"
+                                attrs="{'invisible': [('has_attempted', '=', False)]}"
+                                icon="fa-search"/>
+                        
                         <button string="Close" class="btn-secondary" special="cancel"/>
                     </footer>
                 </form>
             </field>
         </record>
         
-        <!-- Action to open the wizard -->
+        <!-- Action remains the same -->
         <record id="pokedex_catch_wizard_action" model="ir.actions.act_window">
             <field name="name">Catch Pokemon</field>
             <field name="res_model">pokedex.catch.wizard</field>
@@ -40,7 +95,7 @@
             <field name="context">{'default_trainer_id': active_id}</field>
         </record>
         
-        <!-- Menu item for catching Pokemon -->
+        <!-- Menu item remains the same -->
         <menuitem id="menu_catch_pokemon_wizard"
                   name="Catch Pokemon"
                   parent="pokedex_pokemon_menu"

@@ -55,7 +55,7 @@ class PokemonSearchWizard(models.TransientModel):
             return self.refresh_wizard()
     
     def import_batch(self):
-        """Import ALL Pokemon from the PokeAPI with detailed progress tracking"""
+        """Import ALL Pokemon from the PokeAPI with detailed error logging"""
         self.ensure_one()
         
         try:
@@ -64,10 +64,17 @@ class PokemonSearchWizard(models.TransientModel):
             # Get existing Pokemon IDs
             existing_ids = self.env['pokedex.pokemon'].search([]).mapped('pokedex_number')
             
-            # Determine range
-            MAX_POKEMON_ID = 1010
-            all_ids = set(range(1, MAX_POKEMON_ID + 1))
-            missing_ids = sorted(all_ids - set(existing_ids))
+            # For testing, let's try a small batch first
+            TEST_MODE = False  # Set to False to import all
+            
+            if TEST_MODE:
+                # Test with just the first 20 Pokemon
+                missing_ids = [i for i in range(1, 21) if i not in existing_ids]
+                self.search_message = "TEST MODE: Importing Pokemon 1-20"
+            else:
+                MAX_POKEMON_ID = 1010
+                all_ids = set(range(1, MAX_POKEMON_ID + 1))
+                missing_ids = sorted(all_ids - set(existing_ids))
             
             if not missing_ids:
                 self.write({
@@ -81,73 +88,105 @@ class PokemonSearchWizard(models.TransientModel):
             self.write({
                 'is_importing': True,
                 'import_progress': 0.0,
-                'search_message': f'Starting import of {len(missing_ids)} missing Pokemon...',
-                'import_log': f'=== POKEMON IMPORT LOG ===\nFound {len(missing_ids)} Pokemon to import\n\n'
+                'search_message': f'Starting import of {len(missing_ids)} Pokemon...',
+                'import_log': f'=== POKEMON IMPORT LOG ===\nImporting {len(missing_ids)} Pokemon\n\n'
             })
-            
-            # Commit to show initial state
             self.env.cr.commit()
             
-            # Import Pokemon with detailed progress
+            # Import Pokemon with detailed error logging
             imported = 0
             failed = 0
-            log_entries = []
+            consecutive_failures = 0
             
             for i, pokemon_id in enumerate(missing_ids):
                 try:
-                    # Import the Pokemon
+                    # Log attempt
+                    self.import_log += f"\nAttempting Pokemon #{pokemon_id}... "
+                    self.env.cr.commit()  # Save immediately
+                    
+                    # Try to import
                     pokemon = api_sync.import_pokemon(pokemon_id)
+                    
+                    # Success
                     imported += 1
+                    consecutive_failures = 0
+                    self.import_log += f"✓ SUCCESS - {pokemon.name}\n"
                     
-                    log_entry = f"✓ #{pokemon_id} - {pokemon.name}"
-                    log_entries.append(log_entry)
+                    # Update progress
+                    progress = ((i + 1) / len(missing_ids)) * 100
+                    self.search_message = f'Progress: {progress:.1f}% - Imported {imported}/{i + 1} attempted'
+                    self.import_progress = progress
                     
-                    # Update progress every 5 Pokemon
-                    if (i + 1) % 5 == 0 or (i + 1) == len(missing_ids):
-                        progress = ((i + 1) / len(missing_ids)) * 100
-                        
-                        # Keep only last 20 log entries for display
-                        recent_logs = '\n'.join(log_entries[-20:])
-                        if len(log_entries) > 20:
-                            recent_logs = f"... (showing last 20 of {len(log_entries)} entries)\n" + recent_logs
-                        
-                        self.write({
-                            'import_progress': progress,
-                            'search_message': f'Progress: {progress:.1f}% - Imported {imported}/{len(missing_ids)} Pokemon',
-                            'import_log': self.import_log + recent_logs + '\n'
-                        })
-                        
-                        # Commit to save progress
-                        self.env.cr.commit()
-                        
+                    # Commit every successful import
+                    self.env.cr.commit()
+                    
                 except Exception as e:
+                    # Detailed error logging
                     failed += 1
-                    log_entry = f"✗ #{pokemon_id} - Error: {str(e)}"
-                    log_entries.append(log_entry)
-                    _logger.warning(f"Failed to import Pokemon #{pokemon_id}: {str(e)}")
+                    consecutive_failures += 1
+                    
+                    # Get the full error details
+                    error_type = type(e).__name__
+                    error_msg = str(e)
+                    
+                    # Log the error with full details
+                    self.import_log += f"✗ FAILED\n"
+                    self.import_log += f"  Error Type: {error_type}\n"
+                    self.import_log += f"  Error Message: {error_msg}\n"
+                    
+                    # Also log to server console
+                    _logger.error(f"Pokemon #{pokemon_id} failed: {error_type}: {error_msg}")
+                    
+                    # If UserError, it might have more details
+                    if hasattr(e, 'args') and e.args:
+                        self.import_log += f"  Details: {e.args}\n"
+                    
+                    # Update status
+                    self.search_message = f'Progress: Some imports failing - Last error: {error_msg[:50]}...'
+                    
+                    # Save the error
+                    self.env.cr.commit()
+                    
+                    # Stop after 5 consecutive failures in test mode
+                    if TEST_MODE and consecutive_failures >= 5:
+                        self.import_log += f"\n⚠️ TEST MODE: Stopped after {consecutive_failures} consecutive failures\n"
+                        break
+                    elif not TEST_MODE and consecutive_failures >= 10:
+                        self.import_log += f"\n⚠️ Stopped after {consecutive_failures} consecutive failures\n"
+                        break
             
-            # Final update
-            final_count = self.env['pokedex.pokemon'].search_count([])
-            final_message = f"\n\n=== IMPORT COMPLETE ===\n" \
-                          f"Successfully imported: {imported}\n" \
-                          f"Failed: {failed}\n" \
-                          f"Total Pokemon in database: {final_count}"
+            # Final summary
+            self.import_log += f"\n\n=== IMPORT COMPLETE ===\n"
+            self.import_log += f"✓ Successfully imported: {imported}\n"
+            self.import_log += f"✗ Failed: {failed}\n"
+            self.import_log += f"📊 Total Pokemon in database: {self.env['pokedex.pokemon'].search_count([])}\n"
+            
+            if failed > 0:
+                self.import_log += f"\n⚠️ Check the errors above to see why imports failed.\n"
+                self.import_log += f"Common issues:\n"
+                self.import_log += f"- Network/firewall blocking PokeAPI\n"
+                self.import_log += f"- Missing 'requests' library (pip install requests)\n"
+                self.import_log += f"- API rate limiting (try adding delays)\n"
             
             self.write({
                 'is_importing': False,
                 'import_progress': 100.0,
-                'search_message': f'Import Complete! Imported: {imported}, Failed: {failed}',
-                'import_log': self.import_log + final_message
+                'search_message': f'Import Complete! Imported: {imported}, Failed: {failed}'
             })
             
             return self.refresh_wizard()
             
         except Exception as e:
+            import traceback
+            error_trace = traceback.format_exc()
+            
             self.write({
                 'is_importing': False,
-                'search_message': f'Import failed with error: {str(e)}',
-                'import_log': self.import_log + f'\n\n❌ FATAL ERROR: {str(e)}'
+                'search_message': f'Import crashed: {str(e)}',
+                'import_log': self.import_log + f'\n\n❌ FATAL ERROR:\n{error_trace}'
             })
+            
+            _logger.error(f"Import batch crashed: {error_trace}")
             raise UserError(f"Import failed: {str(e)}")
     
     def refresh_wizard(self):
