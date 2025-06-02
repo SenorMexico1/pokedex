@@ -1,6 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
   <data>
+    <!-- Add this at the beginning of your views.xml, right after <data> -->
+    <record id="pokedex_inline_styles" model="ir.ui.view">
+        <field name="name">pokedex.inline.styles</field>
+        <field name="type">qweb</field>
+        <field name="arch" type="xml">
+            <style>
+                /* Pokemon Image Widget Styles */
+                .pokemon-image {
+                    max-width: 200px;
+                    max-height: 200px;
+                    width: auto;
+                    height: auto;
+                    border-radius: 10px;
+                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+                    margin: 10px;
+                }
+
+                /* Pokemon Kanban Card Styles */
+                .o_pokemon_kanban {
+                    width: 280px;
+                    margin: 5px;
+                }
+
+                .o_pokemon_kanban .o_kanban_image_fill_left {
+                    width: 100px;
+                    height: 100px;
+                    background-size: contain;
+                    background-repeat: no-repeat;
+                    background-position: center;
+                }
+            </style>
+        </field>
+    </record>
     <!-- Pokemon Type Views -->
     <record model="ir.ui.view" id="pokedex_type_tree">
       <field name="name">pokedex.type.tree</field>

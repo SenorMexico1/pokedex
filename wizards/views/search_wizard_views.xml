@@ -16,9 +16,9 @@
                     <footer>
                         <button name="search_pokemon" string="Search" 
                                 type="object" class="btn-primary"/>
-                        <button name="import_batch" string="Import Gen 1 (151 Pokemon)" 
+                        <button name="import_batch" string="Import ALL Pokemon (1000+)" 
                                 type="object" class="btn-warning"
-                                confirm="This will import all 151 Generation 1 Pokemon. This may take several minutes. Continue?"/>
+                                confirm="This will import ALL Pokemon from the PokeAPI. This may take 15-30 minutes. Continue?"/>
                         <button string="Cancel" class="btn-secondary" special="cancel"/>
                     </footer>
                 </form>
@@ -33,10 +33,10 @@
             <field name="target">new</field>
         </record>
         
-        <!-- Menu item for searching Pokemon -->
+        <!-- Menu item for searching Pokemon - parent is now pokedex_tools_menu -->
         <menuitem id="menu_search_pokemon_wizard"
                   name="Search/Import Pokemon"
-                  parent="pokedex_pokemon_menu"
+                  parent="pokedex_tools_menu"
                   action="pokedex_search_wizard_action"
                   sequence="5"/>
     </data>
