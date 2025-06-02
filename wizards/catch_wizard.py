@@ -1,4 +1,4 @@
-# Complete fixed wizards/catch_wizard.py
+# wizards/catch_wizard.py - Debug version to see what's happening
 
 from odoo import models, fields, api
 from odoo.exceptions import UserError
@@ -23,66 +23,51 @@ class PokemonCatchWizard(models.TransientModel):
     pokemon_type = fields.Many2one(related='pokemon_id.type_id', string='Type')
     pokemon_stats_display = fields.Text(string='Pokemon Stats', compute='_compute_pokemon_stats_display')
     
-    # Store Pokemon name separately to avoid issues with notifications
-    pokemon_name = fields.Char(string='Pokemon Name', compute='_compute_pokemon_name', store=True)
-    
-    # HTML field for displaying image
-    pokemon_image_html = fields.Html(string='Pokemon Image HTML', compute='_compute_pokemon_image_html', sanitize=False)
-    
     # Catch rate info
     catch_rate = fields.Integer(string='Catch Rate %', compute='_compute_catch_rate')
     is_legendary = fields.Boolean(string='Legendary Pokemon', compute='_compute_is_legendary')
     
     # Catch result fields
     catch_success = fields.Boolean(string='Catch Success', readonly=True)
-    result_message = fields.Char(string='Result', readonly=True)
+    result_message = fields.Char(string='Result', readonly=True, default="Searching for wild Pokemon...")
     
     # State to track if we've attempted to catch
     has_attempted = fields.Boolean(string='Has Attempted', default=False)
     
-    @api.depends('pokemon_id')
-    def _compute_pokemon_name(self):
-        """Store Pokemon name to avoid issues with related fields in notifications"""
-        for wizard in self:
-            wizard.pokemon_name = wizard.pokemon_id.name if wizard.pokemon_id else ''
+    # Debug field
+    debug_info = fields.Text(string='Debug Info', compute='_compute_debug_info')
     
-    @api.depends('pokemon_image')
-    def _compute_pokemon_image_html(self):
-        """Generate HTML for Pokemon image display"""
+    @api.depends('pokemon_id', 'has_attempted', 'result_message')
+    def _compute_debug_info(self):
         for wizard in self:
-            if wizard.pokemon_image:
-                # Convert HTTP to HTTPS if needed
-                image_url = wizard.pokemon_image
-                if image_url.startswith('http://'):
-                    image_url = image_url.replace('http://', 'https://')
-                
-                wizard.pokemon_image_html = f'''
-                    <div style="text-align: center; margin: 20px;">
-                        <img src="{image_url}" 
-                             style="max-width: 300px; max-height: 300px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"
-                             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
-                             alt="{wizard.pokemon_name or 'Pokemon'}"/>
-                        <div style="display: none; padding: 40px; background-color: #f8f9fa; border-radius: 10px;">
-                            <i class="fa fa-image" style="font-size: 48px; color: #ccc;"></i>
-                            <p style="color: #666; margin-top: 10px;">Pokemon image not available</p>
-                        </div>
-                    </div>
-                '''
-            else:
-                wizard.pokemon_image_html = '''
-                    <div style="text-align: center; padding: 40px; color: #666;">
-                        <i class="fa fa-image" style="font-size: 48px; color: #ccc;"></i>
-                        <p>No image available</p>
-                    </div>
-                '''
+            wizard.debug_info = f"""
+            Pokemon ID: {wizard.pokemon_id.id if wizard.pokemon_id else 'None'}
+            Pokemon Name: {wizard.pokemon_id.name if wizard.pokemon_id else 'None'}
+            Has Attempted: {wizard.has_attempted}
+            Result Message: {wizard.result_message}
+            Context: {self.env.context}
+            """
     
     @api.model
-    def default_get(self, fields):
+    def default_get(self, fields_list):
         """Override to randomly select a Pokemon when wizard opens"""
-        res = super().default_get(fields)
+        res = super().default_get(fields_list)
+        
+        _logger.info(f"=== CATCH WIZARD DEFAULT_GET ===")
+        _logger.info(f"Context: {self.env.context}")
+        _logger.info(f"Fields list: {fields_list}")
+        
+        # Set the default trainer if not provided
+        trainer_id = res.get('trainer_id') or self.env.context.get('default_trainer_id') or self.env.user.partner_id.id
+        res['trainer_id'] = trainer_id
+        
+        # Get the trainer
+        trainer = self.env['res.partner'].browse(trainer_id)
+        if not trainer.exists():
+            trainer = self.env.user.partner_id
+            res['trainer_id'] = trainer.id
         
         # Get all Pokemon that the trainer doesn't already have
-        trainer = self.env.user.partner_id
         owned_pokemon_ids = trainer.trainer_pokemon_ids.mapped('pokemon_id.id')
         
         # Find available Pokemon to catch
@@ -91,14 +76,17 @@ class PokemonCatchWizard(models.TransientModel):
         ])
         
         if not available_pokemon:
-            raise UserError("Congratulations! You've already caught all available Pokemon!")
+            res['result_message'] = "Congratulations! You've already caught all available Pokemon!"
+            return res
         
         # Randomly select one
         random_pokemon = choice(available_pokemon)
         res['pokemon_id'] = random_pokemon.id
+        # IMPORTANT: Include the Pokemon ID in the message so we can parse it later
+        res['result_message'] = f"A wild {random_pokemon.name} (#{random_pokemon.pokedex_number}) appeared!"
         
-        # Set initial message
-        res['result_message'] = f"A wild {random_pokemon.name} appeared!"
+        _logger.info(f"Selected Pokemon: {random_pokemon.name} (ID: {random_pokemon.id}, Number: {random_pokemon.pokedex_number})")
+        _logger.info(f"Result dict: {res}")
         
         return res
     
@@ -120,13 +108,11 @@ class PokemonCatchWizard(models.TransientModel):
         """Determine if a Pokemon is legendary based on stats"""
         for wizard in self:
             if wizard.pokemon_id:
-                # Consider Pokemon legendary if total stats > 500
                 total_stats = (wizard.pokemon_id.base_hp + 
                              wizard.pokemon_id.base_attack + 
                              wizard.pokemon_id.base_defense + 
                              wizard.pokemon_id.base_speed)
                 
-                # Also check specific Pokemon by name or pokedex number
                 legendary_names = ['mewtwo', 'mew', 'articuno', 'zapdos', 'moltres', 
                                  'lugia', 'ho-oh', 'celebi', 'kyogre', 'groudon', 
                                  'rayquaza', 'dialga', 'palkia', 'giratina', 'arceus']
@@ -144,24 +130,14 @@ class PokemonCatchWizard(models.TransientModel):
         """Calculate catch rate based on Pokemon stats"""
         for wizard in self:
             if wizard.pokemon_id:
-                # Base catch rate starts at 90%
                 base_rate = 90
-                
-                # Reduce based on total stats
                 total_stats = (wizard.pokemon_id.base_hp + 
                              wizard.pokemon_id.base_attack + 
                              wizard.pokemon_id.base_defense + 
                              wizard.pokemon_id.base_speed)
-                
-                # Every 10 total stats reduces catch rate by 1%
                 stats_penalty = total_stats // 10
-                
-                # Legendary Pokemon get an additional penalty
                 legendary_penalty = 40 if wizard.is_legendary else 0
-                
-                # Calculate final catch rate (minimum 5%)
                 catch_rate = max(5, base_rate - stats_penalty - legendary_penalty)
-                
                 wizard.catch_rate = catch_rate
             else:
                 wizard.catch_rate = 0
@@ -170,74 +146,127 @@ class PokemonCatchWizard(models.TransientModel):
         """Attempt to catch the randomly selected Pokemon"""
         self.ensure_one()
         
+        _logger.info(f"=== ATTEMPT CATCH ===")
+        _logger.info(f"Current state - Has attempted: {self.has_attempted}")
+        _logger.info(f"Current Pokemon ID field: {self.pokemon_id.id if self.pokemon_id else 'None'}")
+        _logger.info(f"Current Pokemon Name field: {self.pokemon_id.name if self.pokemon_id else 'None'}")
+        _logger.info(f"Result message: {self.result_message}")
+        
         if self.has_attempted:
             # Find a new Pokemon after an attempt
             return self.find_new_pokemon()
         
-        # Store the Pokemon info before any operations (to fix the name bug)
-        pokemon_name = str(self.pokemon_name or self.pokemon_id.name)
-        pokemon_is_legendary = bool(self.is_legendary)
-        pokemon_id = self.pokemon_id.id
+        # BETTER FIX: Parse the Pokemon NAME from the result_message
+        import re
+        name_match = re.search(r"A wild (.+) \(#\d+\) appeared!", self.result_message or "")
+        if not name_match:
+            raise UserError("Could not determine which Pokemon to catch!")
         
-        # Check if trainer already has this Pokemon (double check)
+        pokemon_name = name_match.group(1)
+        
+        # Find the Pokemon by its name (more reliable than number)
+        pokemon = self.env['pokedex.pokemon'].search([
+            ('name', '=', pokemon_name)
+        ], limit=1)
+        
+        if not pokemon:
+            # Try case-insensitive search
+            pokemon = self.env['pokedex.pokemon'].search([
+                ('name', 'ilike', pokemon_name)
+            ], limit=1)
+        
+        if not pokemon:
+            raise UserError(f"Could not find Pokemon named '{pokemon_name}'!")
+        
+        _logger.info(f"Found Pokemon by name: {pokemon.name} (Pokedex #{pokemon.pokedex_number}, DB ID: {pokemon.id})")
+        _logger.info(f"This is the Pokemon we will actually try to catch!")
+        
+        # Store the Pokemon info - USE THE POKEMON WE JUST FOUND
+        pokemon_name = pokemon.name
+        pokemon_id = pokemon.id
+        
+        # Calculate catch rate for THIS Pokemon
+        total_stats = (pokemon.base_hp + pokemon.base_attack + 
+                      pokemon.base_defense + pokemon.base_speed)
+        
+        # Check if legendary
+        legendary_names = ['mewtwo', 'mew', 'articuno', 'zapdos', 'moltres', 
+                         'lugia', 'ho-oh', 'celebi', 'kyogre', 'groudon', 
+                         'rayquaza', 'dialga', 'palkia', 'giratina', 'arceus']
+        legendary_numbers = [150, 151, 144, 145, 146, 249, 250, 251, 382, 383, 
+                           384, 483, 484, 487, 493]
+        
+        pokemon_is_legendary = (total_stats > 500 or 
+                               pokemon.name.lower() in legendary_names or
+                               pokemon.pokedex_number in legendary_numbers)
+        
+        # Calculate catch rate
+        base_rate = 90
+        stats_penalty = total_stats // 10
+        legendary_penalty = 40 if pokemon_is_legendary else 0
+        catch_rate = max(5, base_rate - stats_penalty - legendary_penalty)
+        
+        _logger.info(f"Calculated catch rate: {catch_rate}% for {pokemon_name}")
+        
+        # Check if trainer already has this Pokemon
         existing_pokemon = self.env['pokedex.trainer.pokemon'].search([
             ('trainer_id', '=', self.trainer_id.id),
             ('pokemon_id', '=', pokemon_id)
         ])
         
         if existing_pokemon:
-            # This shouldn't happen with our default_get logic, but just in case
+            _logger.warning(f"Trainer already has {pokemon_name}")
             return self.find_new_pokemon()
         
-        # Roll for catch success based on calculated catch rate
+        # Roll for catch success
         catch_roll = randint(1, 100)
+        _logger.info(f"Catch roll: {catch_roll} vs catch rate: {catch_rate}")
         
-        if catch_roll <= self.catch_rate:
-            # Success! Create the trainer's Pokemon
-            new_pokemon = self.env['pokedex.trainer.pokemon'].create({
-                'trainer_id': self.trainer_id.id,
-                'pokemon_id': pokemon_id,
-                'nickname': False,  # No nickname by default
-                'level': randint(3, 10),  # Random starting level between 3-10
-                'experience': 0
-            })
-            
-            # Update wizard state
-            self.write({
-                'catch_success': True,
-                'has_attempted': True
-            })
-            
-            # Create success message
-            if pokemon_is_legendary:
-                success_message = f"INCREDIBLE! You caught the legendary {pokemon_name}!"
-            else:
-                success_message = f"Success! You caught {pokemon_name}!"
-            
-            self.result_message = success_message
-            
-            # Return a notification action
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': 'Pokemon Caught!',
-                    'message': success_message,
-                    'type': 'success',
-                    'sticky': False,
+        if catch_roll <= catch_rate:
+            # Success!
+            try:
+                new_pokemon = self.env['pokedex.trainer.pokemon'].create({
+                    'trainer_id': self.trainer_id.id,
+                    'pokemon_id': pokemon_id,
+                    'nickname': False,
+                    'level': randint(3, 10),
+                    'experience': 0
+                })
+                
+                self.write({
+                    'catch_success': True,
+                    'has_attempted': True
+                })
+                
+                if pokemon_is_legendary:
+                    success_message = f"INCREDIBLE! You caught the legendary {pokemon_name}!"
+                else:
+                    success_message = f"Success! You caught {pokemon_name}!"
+                
+                self.result_message = success_message
+                
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': 'Pokemon Caught!',
+                        'message': success_message,
+                        'type': 'success',
+                        'sticky': False,
+                    }
                 }
-            }
+            except Exception as e:
+                _logger.error(f"Error creating trainer pokemon: {str(e)}")
+                raise UserError(f"Error catching Pokemon: {str(e)}")
         else:
-            # Failed to catch
-            # Different messages based on how close they were
-            if catch_roll <= self.catch_rate + 10:
+            # Failed
+            if catch_roll <= catch_rate + 10:
                 failure_message = f"So close! {pokemon_name} broke free at the last second!"
             elif pokemon_is_legendary:
                 failure_message = f"The legendary {pokemon_name} broke free with its immense power!"
             else:
                 failure_message = f"Oh no! {pokemon_name} escaped!"
             
-            # Update wizard state
             self.write({
                 'catch_success': False,
                 'result_message': failure_message,
@@ -257,6 +286,8 @@ class PokemonCatchWizard(models.TransientModel):
     
     def find_new_pokemon(self):
         """Find a new wild Pokemon"""
+        _logger.info("=== FIND NEW POKEMON ===")
+        
         # Get all Pokemon that the trainer doesn't already have
         owned_pokemon_ids = self.trainer_id.trainer_pokemon_ids.mapped('pokemon_id.id')
         
@@ -278,12 +309,14 @@ class PokemonCatchWizard(models.TransientModel):
         # Randomly select a new one
         new_pokemon = choice(available_pokemon)
         
-        # Reset wizard state with new Pokemon
+        _logger.info(f"New Pokemon selected: {new_pokemon.name} (ID: {new_pokemon.id})")
+        
+        # Reset wizard state
         self.write({
             'pokemon_id': new_pokemon.id,
             'has_attempted': False,
             'catch_success': False,
-            'result_message': f"A wild {new_pokemon.name} appeared!"
+            'result_message': f"A wild {new_pokemon.name} (#{new_pokemon.pokedex_number}) appeared!"
         })
         
         # Reload the wizard
