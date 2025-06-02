@@ -1,9 +1,6 @@
 from odoo import models, fields, api
 from odoo.exceptions import UserError
 from random import randint, choice
-import logging
-
-_logger = logging.getLogger(__name__)
 
 class PokemonCatchWizard(models.TransientModel):
     _name = 'pokedex.catch.wizard'
@@ -13,8 +10,8 @@ class PokemonCatchWizard(models.TransientModel):
                                 required=True, default=lambda self: self.env.user.partner_id)
     pokemon_id = fields.Many2one('pokedex.pokemon', string='Wild Pokemon Appeared!', readonly=True)
     
-    # DIAGNOSTIC: Store the initial Pokemon ID to detect changes
-    initial_pokemon_id = fields.Integer(string='Initial Pokemon ID', readonly=True)
+    # HACK: Store the Pokemon ID as a regular field that will persist
+    target_pokemon_id = fields.Integer(string='Target Pokemon ID')
     
     # Display fields
     pokemon_image = fields.Char(related='pokemon_id.image_url', string='Pokemon Image')
@@ -33,10 +30,8 @@ class PokemonCatchWizard(models.TransientModel):
     @api.model
     def default_get(self, fields_list):
         """Set initial Pokemon when wizard opens"""
-        _logger.warning("CATCH WIZARD: default_get called")
         res = super().default_get(fields_list)
         
-        # Get trainer
         trainer = self.env.user.partner_id
         owned_pokemon_ids = trainer.trainer_pokemon_ids.mapped('pokemon_id.id')
         available_pokemon = self.env['pokedex.pokemon'].search([
@@ -48,28 +43,10 @@ class PokemonCatchWizard(models.TransientModel):
         
         random_pokemon = choice(available_pokemon)
         res['pokemon_id'] = random_pokemon.id
-        res['initial_pokemon_id'] = random_pokemon.id  # Store for comparison
+        res['target_pokemon_id'] = random_pokemon.id  # Store the ID
         res['result_message'] = f"A wild {random_pokemon.name} appeared!"
         
-        _logger.warning(f"CATCH WIZARD: Selected Pokemon {random_pokemon.name} (ID: {random_pokemon.id})")
-        
         return res
-    
-    @api.model
-    def create(self, vals):
-        """Log when wizard is created"""
-        _logger.warning(f"CATCH WIZARD: create() called with vals: {vals}")
-        result = super().create(vals)
-        _logger.warning(f"CATCH WIZARD: After create - Pokemon: {result.pokemon_id.name} (ID: {result.pokemon_id.id})")
-        return result
-    
-    def write(self, vals):
-        """Log any writes to detect changes"""
-        _logger.warning(f"CATCH WIZARD: write() called with vals: {vals}")
-        _logger.warning(f"CATCH WIZARD: Before write - Pokemon: {self.pokemon_id.name} (ID: {self.pokemon_id.id})")
-        result = super().write(vals)
-        _logger.warning(f"CATCH WIZARD: After write - Pokemon: {self.pokemon_id.name} (ID: {self.pokemon_id.id})")
-        return result
     
     @api.depends('pokemon_id')
     def _compute_pokemon_stats_display(self):
@@ -119,37 +96,47 @@ class PokemonCatchWizard(models.TransientModel):
         """Attempt to catch the Pokemon"""
         self.ensure_one()
         
-        _logger.warning(f"CATCH WIZARD: attempt_catch() called")
-        _logger.warning(f"CATCH WIZARD: Current Pokemon: {self.pokemon_id.name} (ID: {self.pokemon_id.id})")
-        _logger.warning(f"CATCH WIZARD: Initial Pokemon ID was: {self.initial_pokemon_id}")
-        
-        if self.pokemon_id.id != self.initial_pokemon_id:
-            _logger.error(f"CATCH WIZARD: POKEMON CHANGED! Was {self.initial_pokemon_id}, now {self.pokemon_id.id}")
-        
         if self.has_attempted:
             return {'type': 'ir.actions.do_nothing'}
         
-        # Get Pokemon data
-        pokemon_id = self.pokemon_id.id
-        pokemon_name = self.pokemon_id.name
-        is_legendary = self.is_legendary
-        catch_rate = self.catch_rate
+        # HACK: Use the stored target_pokemon_id instead of pokemon_id
+        pokemon_id = self.target_pokemon_id
+        if not pokemon_id:
+            raise UserError("No Pokemon targeted!")
         
-        _logger.warning(f"CATCH WIZARD: About to roll catch for {pokemon_name} (ID: {pokemon_id})")
+        pokemon = self.env['pokedex.pokemon'].browse(pokemon_id)
+        if not pokemon.exists():
+            raise UserError("Target Pokemon not found!")
+        
+        pokemon_name = pokemon.name
+        
+        # Get catch rate for the target Pokemon
+        # We need to recalculate since the form might have a different Pokemon
+        total_stats = sum([
+            pokemon.base_hp,
+            pokemon.base_attack,
+            pokemon.base_defense,
+            pokemon.base_speed
+        ])
+        is_legendary = total_stats > 500
+        stats_penalty = total_stats // 10
+        legendary_penalty = 40 if is_legendary else 0
+        catch_rate = max(5, 90 - stats_penalty - legendary_penalty)
+        
+        # Mark as attempted
+        self.has_attempted = True
         
         # Roll for catch
         catch_roll = randint(1, 100)
         
         if catch_roll <= catch_rate:
             # Success!
-            new_pokemon = self.env['pokedex.trainer.pokemon'].create({
+            self.env['pokedex.trainer.pokemon'].create({
                 'trainer_id': self.trainer_id.id,
                 'pokemon_id': pokemon_id,
                 'level': randint(3, 10),
                 'experience': 0
             })
-            
-            _logger.warning(f"CATCH WIZARD: Created trainer Pokemon for {new_pokemon.pokemon_id.name} (ID: {new_pokemon.pokemon_id.id})")
             
             message = f"Success! You caught {pokemon_name}!"
             if is_legendary:
@@ -157,7 +144,6 @@ class PokemonCatchWizard(models.TransientModel):
             
             self.write({
                 'catch_success': True,
-                'has_attempted': True,
                 'result_message': message
             })
             
@@ -179,7 +165,6 @@ class PokemonCatchWizard(models.TransientModel):
             
             self.write({
                 'catch_success': False,
-                'has_attempted': True,
                 'result_message': message
             })
             

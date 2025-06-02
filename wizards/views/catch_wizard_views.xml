@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <!-- Catch Wizard Form View for Diagnostic -->
+        <!-- Catch Wizard Form View with Hidden Target Field -->
         <record id="pokedex_catch_wizard_form" model="ir.ui.view">
             <field name="name">pokedex.catch.wizard.form</field>
             <field name="model">pokedex.catch.wizard</field>
@@ -10,7 +10,8 @@
                     <field name="catch_success" invisible="1"/>
                     <field name="has_attempted" invisible="1"/>
                     <field name="is_legendary" invisible="1"/>
-                    <field name="initial_pokemon_id" invisible="1"/>
+                    <!-- HACK: Hidden field to preserve Pokemon ID -->
+                    <field name="target_pokemon_id" invisible="1"/>
                     
                     <sheet>
                         <!-- Hidden trainer field -->
