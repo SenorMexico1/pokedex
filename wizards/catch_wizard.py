@@ -1,3 +1,5 @@
+# Complete fixed wizards/catch_wizard.py
+
 from odoo import models, fields, api
 from odoo.exceptions import UserError
 from random import randint, choice
@@ -21,6 +23,12 @@ class PokemonCatchWizard(models.TransientModel):
     pokemon_type = fields.Many2one(related='pokemon_id.type_id', string='Type')
     pokemon_stats_display = fields.Text(string='Pokemon Stats', compute='_compute_pokemon_stats_display')
     
+    # Store Pokemon name separately to avoid issues with notifications
+    pokemon_name = fields.Char(string='Pokemon Name', compute='_compute_pokemon_name', store=True)
+    
+    # HTML field for displaying image
+    pokemon_image_html = fields.Html(string='Pokemon Image HTML', compute='_compute_pokemon_image_html', sanitize=False)
+    
     # Catch rate info
     catch_rate = fields.Integer(string='Catch Rate %', compute='_compute_catch_rate')
     is_legendary = fields.Boolean(string='Legendary Pokemon', compute='_compute_is_legendary')
@@ -31,6 +39,42 @@ class PokemonCatchWizard(models.TransientModel):
     
     # State to track if we've attempted to catch
     has_attempted = fields.Boolean(string='Has Attempted', default=False)
+    
+    @api.depends('pokemon_id')
+    def _compute_pokemon_name(self):
+        """Store Pokemon name to avoid issues with related fields in notifications"""
+        for wizard in self:
+            wizard.pokemon_name = wizard.pokemon_id.name if wizard.pokemon_id else ''
+    
+    @api.depends('pokemon_image')
+    def _compute_pokemon_image_html(self):
+        """Generate HTML for Pokemon image display"""
+        for wizard in self:
+            if wizard.pokemon_image:
+                # Convert HTTP to HTTPS if needed
+                image_url = wizard.pokemon_image
+                if image_url.startswith('http://'):
+                    image_url = image_url.replace('http://', 'https://')
+                
+                wizard.pokemon_image_html = f'''
+                    <div style="text-align: center; margin: 20px;">
+                        <img src="{image_url}" 
+                             style="max-width: 300px; max-height: 300px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+                             alt="{wizard.pokemon_name or 'Pokemon'}"/>
+                        <div style="display: none; padding: 40px; background-color: #f8f9fa; border-radius: 10px;">
+                            <i class="fa fa-image" style="font-size: 48px; color: #ccc;"></i>
+                            <p style="color: #666; margin-top: 10px;">Pokemon image not available</p>
+                        </div>
+                    </div>
+                '''
+            else:
+                wizard.pokemon_image_html = '''
+                    <div style="text-align: center; padding: 40px; color: #666;">
+                        <i class="fa fa-image" style="font-size: 48px; color: #ccc;"></i>
+                        <p>No image available</p>
+                    </div>
+                '''
     
     @api.model
     def default_get(self, fields):
@@ -130,10 +174,15 @@ class PokemonCatchWizard(models.TransientModel):
             # Find a new Pokemon after an attempt
             return self.find_new_pokemon()
         
+        # Store the Pokemon info before any operations (to fix the name bug)
+        pokemon_name = str(self.pokemon_name or self.pokemon_id.name)
+        pokemon_is_legendary = bool(self.is_legendary)
+        pokemon_id = self.pokemon_id.id
+        
         # Check if trainer already has this Pokemon (double check)
         existing_pokemon = self.env['pokedex.trainer.pokemon'].search([
             ('trainer_id', '=', self.trainer_id.id),
-            ('pokemon_id', '=', self.pokemon_id.id)
+            ('pokemon_id', '=', pokemon_id)
         ])
         
         if existing_pokemon:
@@ -147,21 +196,25 @@ class PokemonCatchWizard(models.TransientModel):
             # Success! Create the trainer's Pokemon
             new_pokemon = self.env['pokedex.trainer.pokemon'].create({
                 'trainer_id': self.trainer_id.id,
-                'pokemon_id': self.pokemon_id.id,
+                'pokemon_id': pokemon_id,
                 'nickname': False,  # No nickname by default
                 'level': randint(3, 10),  # Random starting level between 3-10
                 'experience': 0
             })
             
-            self.catch_success = True
+            # Update wizard state
+            self.write({
+                'catch_success': True,
+                'has_attempted': True
+            })
             
-            # Special message for legendary Pokemon
-            if self.is_legendary:
-                self.result_message = f"INCREDIBLE! You caught the legendary {self.pokemon_id.name}!"
+            # Create success message
+            if pokemon_is_legendary:
+                success_message = f"INCREDIBLE! You caught the legendary {pokemon_name}!"
             else:
-                self.result_message = f"Success! You caught {self.pokemon_id.name}!"
+                success_message = f"Success! You caught {pokemon_name}!"
             
-            self.has_attempted = True
+            self.result_message = success_message
             
             # Return a notification action
             return {
@@ -169,31 +222,34 @@ class PokemonCatchWizard(models.TransientModel):
                 'tag': 'display_notification',
                 'params': {
                     'title': 'Pokemon Caught!',
-                    'message': self.result_message,
+                    'message': success_message,
                     'type': 'success',
                     'sticky': False,
                 }
             }
         else:
             # Failed to catch
-            self.catch_success = False
-            
             # Different messages based on how close they were
             if catch_roll <= self.catch_rate + 10:
-                self.result_message = f"So close! {self.pokemon_id.name} broke free at the last second!"
-            elif self.is_legendary:
-                self.result_message = f"The legendary {self.pokemon_id.name} broke free with its immense power!"
+                failure_message = f"So close! {pokemon_name} broke free at the last second!"
+            elif pokemon_is_legendary:
+                failure_message = f"The legendary {pokemon_name} broke free with its immense power!"
             else:
-                self.result_message = f"Oh no! {self.pokemon_id.name} escaped!"
+                failure_message = f"Oh no! {pokemon_name} escaped!"
             
-            self.has_attempted = True
+            # Update wizard state
+            self.write({
+                'catch_success': False,
+                'result_message': failure_message,
+                'has_attempted': True
+            })
             
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
                     'title': 'Pokemon Escaped!',
-                    'message': self.result_message,
+                    'message': failure_message,
                     'type': 'warning',
                     'sticky': False,
                 }
