@@ -178,3 +178,8 @@ class PokemonCatchWizard(models.TransientModel):
                     'sticky': False,
                 }
             }
+    
+    def find_new_pokemon(self):
+        """Close the wizard and open a new one with a different Pokemon"""
+        # Simply close this wizard and let user open a new one
+        return {'type': 'ir.actions.act_window_close'}

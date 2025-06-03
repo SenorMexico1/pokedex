@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- View updates to show XP progress -->
+        <record model="ir.ui.view" id="trainer_pokemon_xp_progress_tree">
+            <field name="name">trainer.pokemon.xp.progress.tree</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="pokedex_trainer_form"/>
+            <field name="arch" type="xml">
+                <!-- Update the trainer_pokemon_ids tree view -->
+                <xpath expr="//field[@name='trainer_pokemon_ids']" position="attributes">
+                    <attribute name="context">{'tree_view_ref': 'pokedex_app.trainer_pokemon_progress_tree'}</attribute>
+                </xpath>
+            </field>
+        </record>
+        
+        <!-- Enhanced tree view for trainer's Pokemon with XP progress -->
+        <record model="ir.ui.view" id="trainer_pokemon_progress_tree">
+            <field name="name">trainer.pokemon.progress.tree</field>
+            <field name="model">pokedex.trainer.pokemon</field>
+            <field name="arch" type="xml">
+                <tree string="My Pokemon" decoration-success="experience >= experience_next_level">
+                    <field name="pokemon_id" string="Pokemon"/>
+                    <field name="nickname"/>
+                    <field name="level"/>
+                    <field name="experience" invisible="1"/>
+                    <field name="experience_next_level" invisible="1"/>
+                    <field name="experience_progress" string="XP Progress"/>
+                    <field name="hp"/>
+                    <field name="attack"/>
+                    <field name="defense"/>
+                    <field name="speed"/>
+                </tree>
+            </field>
+        </record>
+        
+        <!-- Enhanced form view for trainer pokemon -->
+        <record model="ir.ui.view" id="pokedex_trainer_pokemon_form_xp">
+            <field name="name">pokedex.trainer.pokemon.form.xp</field>
+            <field name="model">pokedex.trainer.pokemon</field>
+            <field name="inherit_id" ref="pokedex_trainer_pokemon_form"/>
+            <field name="arch" type="xml">
+                <!-- Add XP progress after experience field -->
+                <xpath expr="//field[@name='experience']" position="after">
+                    <field name="experience_next_level" readonly="1" string="XP Needed"/>
+                    <field name="experience_progress" readonly="1" string="Progress"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
