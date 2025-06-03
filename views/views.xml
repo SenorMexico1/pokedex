@@ -133,7 +133,8 @@
                     type="object" class="btn-secondary"/>
           </header>
           <sheet>
-            <field name="image_url" widget="pokedex_image" class="oe_avatar"/>
+            <field name="image_html" widget="html" readonly="1" nolabel="1"/>
+            <field name="image_url" invisible="1"/>
             <div class="oe_title">
               <h1>
                 <field name="name" placeholder="Pokemon Name"/>
@@ -260,11 +261,9 @@
       <field name="model">pokedex.trainer.pokemon</field>
       <field name="arch" type="xml">
         <form>
-          <header>
-            <button name="level_up" string="Level Up" type="object" class="oe_highlight"/>
-          </header>
           <sheet>
-            <field name="image_url" widget="pokedex_image" class="oe_avatar"/>
+            <field name="image_html" widget="html" readonly="1" nolabel="1"/>
+            <field name="image_url" invisible="1"/>
             <div class="oe_title">
               <h1>
                 <field name="nickname" placeholder="Nickname"/>

@@ -19,8 +19,8 @@
         'data/pokemon_level_up.xml',
         # Load XP view updates AFTER main views
         'data/trainer_pokemon_xp_views.xml',
-        # Display updates for form views
-        'views/pokemon_url_display.xml',
+        # COMMENTED OUT FOR NOW
+        # 'views/pokemon_url_display.xml',
     ],
     'installable': True,
     'application': True,

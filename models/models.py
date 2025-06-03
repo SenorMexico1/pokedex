@@ -43,6 +43,8 @@ class Pokemon(models.Model):
     image_url = fields.Char(string='Pokemon Image URL')
     description = fields.Text(string='Description')
     
+    image_html = fields.Html(string='Image', compute='_compute_image_html', sanitize=False)
+
     def action_refresh_from_api(self):
         """Refresh Pokemon data from PokeAPI"""
         api_sync = self.env['pokedex.api.sync']
@@ -50,6 +52,14 @@ class Pokemon(models.Model):
             # Re-import the Pokemon data
             api_sync.import_pokemon(pokemon.pokedex_number)
         return True
+    
+    @api.depends('image_url')
+    def _compute_image_html(self):
+        for record in self:
+            if record.image_url:
+                record.image_html = '<img src="%s" style="max-width: 200px; max-height: 200px; border-radius: 10px;" />' % record.image_url
+            else:
+                record.image_html = '<p>No image</p>'
     
     
 class Trainer(models.Model):
@@ -105,7 +115,8 @@ class TrainerPokemon(models.Model):
     
     # Store the image from the related pokemon
     image_url = fields.Char(related='pokemon_id.image_url', string='Image URL')
-    
+    image_html = fields.Html(string='Image', compute='_compute_image_html', sanitize=False)
+
     @api.depends('level')
     def _compute_experience_next_level(self):
         """Compute XP needed for next level"""
@@ -156,3 +167,11 @@ class TrainerPokemon(models.Model):
                 
                 return True
         return False
+
+    @api.depends('image_url')
+    def _compute_image_html(self):
+        for record in self:
+            if record.image_url:
+                record.image_html = '<img src="%s" style="max-width: 200px; max-height: 200px; border-radius: 10px;" />' % record.image_url
+            else:
+                record.image_html = '<p>No image</p>'

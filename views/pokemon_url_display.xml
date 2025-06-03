@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Pokemon Form - Remove problematic widget -->
+        <record model="ir.ui.view" id="pokemon_form_simple_url">
+            <field name="name">pokemon.form.simple.url</field>
+            <field name="model">pokedex.pokemon</field>
+            <field name="inherit_id" ref="pokedex_pokemon_form"/>
+            <field name="arch" type="xml">
+                <!-- Change widget to url -->
+                <xpath expr="//field[@name='image_url']" position="attributes">
+                    <attribute name="widget">url</attribute>
+                </xpath>
+            </field>
+        </record>
+        
+        <!-- Trainer Pokemon Form - Remove problematic widget -->
+        <record model="ir.ui.view" id="trainer_pokemon_form_simple_url">
+            <field name="name">trainer.pokemon.form.simple.url</field>
+            <field name="model">pokedex.trainer.pokemon</field>
+            <field name="inherit_id" ref="pokedex_trainer_pokemon_form"/>
+            <field name="arch" type="xml">
+                <!-- Change widget to url -->
+                <xpath expr="//field[@name='image_url']" position="attributes">
+                    <attribute name="widget">url</attribute>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
