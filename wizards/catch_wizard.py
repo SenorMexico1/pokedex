@@ -13,23 +13,18 @@ class PokemonCatchWizard(models.TransientModel):
     
     target_pokemon_id = fields.Integer(string='Target Pokemon ID')
     
-    # Display fields
     pokemon_image = fields.Char(related='pokemon_id.image_url', string='Pokemon Image')
     pokemon_type = fields.Many2one(related='pokemon_id.type_id', string='Type')
     pokemon_stats_display = fields.Text(string='Pokemon Stats', compute='_compute_pokemon_stats_display')
     
-    # Catch info
     catch_rate = fields.Integer(string='Catch Rate %', compute='_compute_catch_rate')
     is_legendary = fields.Boolean(string='Legendary Pokemon', compute='_compute_is_legendary')
     
-    # Result tracking
     catch_success = fields.Boolean(string='Catch Success', readonly=True, default=False)
     result_message = fields.Char(string='Result', readonly=True)
     has_attempted = fields.Boolean(string='Has Attempted', default=False)
     image_html = fields.Html(string='Image', compute='_compute_image_html', sanitize=False)
 
-
-    # Cooldown tracking
     cooldown_message = fields.Char(string='Cooldown Message', readonly=True)
     can_catch = fields.Boolean(string='Can Catch', default=True)
     
@@ -38,14 +33,11 @@ class PokemonCatchWizard(models.TransientModel):
         """Set initial Pokemon when wizard opens"""
         res = super().default_get(fields_list)
         
-        # Get the trainer (current user by default)
         trainer = self.env.user.partner_id
         
-        # Make sure user is a trainer
         if not trainer.is_trainer:
             trainer.is_trainer = True
         
-        # Check cooldown (15 minutes)
         if trainer.last_catch_attempt:
             time_since_last = datetime.now() - trainer.last_catch_attempt
             cooldown_remaining = timedelta(minutes=15) - time_since_last
@@ -58,7 +50,6 @@ class PokemonCatchWizard(models.TransientModel):
                 res['result_message'] = "You need to wait before catching another Pokemon."
                 return res
         
-        # If cooldown passed, find a wild Pokemon
         owned_pokemon_ids = trainer.trainer_pokemon_ids.mapped('pokemon_id.id')
         available_pokemon = self.env['pokedex.pokemon'].search([
             ('id', 'not in', owned_pokemon_ids)
@@ -69,7 +60,7 @@ class PokemonCatchWizard(models.TransientModel):
         
         random_pokemon = choice(available_pokemon)
         res['pokemon_id'] = random_pokemon.id
-        res['target_pokemon_id'] = random_pokemon.id  # Store the ID
+        res['target_pokemon_id'] = random_pokemon.id
         res['result_message'] = f"A wild {random_pokemon.name} appeared!"
         res['can_catch'] = True
         
@@ -92,13 +83,20 @@ class PokemonCatchWizard(models.TransientModel):
     def _compute_is_legendary(self):
         for wizard in self:
             if wizard.pokemon_id:
-                total_stats = sum([
-                    wizard.pokemon_id.base_hp,
-                    wizard.pokemon_id.base_attack,
-                    wizard.pokemon_id.base_defense,
-                    wizard.pokemon_id.base_speed
-                ])
-                wizard.is_legendary = total_stats > 500
+                legendary_ids = [
+                    144, 145, 146, 150, 151,
+                    243, 244, 245, 249, 250, 251,
+                    377, 378, 379, 380, 381, 382, 383, 384, 385, 386,
+                    480, 481, 482, 483, 484, 485, 486, 487, 488, 489, 490, 491, 492, 493,
+                    494, 638, 639, 640, 641, 642, 643, 644, 645, 646, 647, 648, 649,
+                    716, 717, 718, 719, 720, 721,
+                    772, 773, 785, 786, 787, 788, 789, 790, 791, 792, 793, 794, 795, 796, 
+                    797, 798, 799, 800, 801, 802, 803, 804, 805, 806, 807, 808, 809,
+                    888, 889, 890, 891, 892, 893, 894, 895, 896, 897, 898,
+                    905, 1001, 1002, 1003, 1004, 1007, 1008, 1009, 1010, 1014, 1015, 1016, 
+                    1017, 1020, 1021, 1022, 1023, 1024, 1025,
+                ]
+                wizard.is_legendary = wizard.pokemon_id.pokedex_number in legendary_ids
             else:
                 wizard.is_legendary = False
     
@@ -129,10 +127,7 @@ class PokemonCatchWizard(models.TransientModel):
         if self.has_attempted:
             return {'type': 'ir.actions.do_nothing'}
         
-        # Update last catch attempt time
         self.trainer_id.last_catch_attempt = datetime.now()
-        
-        # HACK: Use the stored target_pokemon_id instead of pokemon_id
         pokemon_id = self.target_pokemon_id
         if not pokemon_id:
             raise UserError("No Pokemon targeted!")
@@ -143,26 +138,34 @@ class PokemonCatchWizard(models.TransientModel):
         
         pokemon_name = pokemon.name
         
-        # Get catch rate for the target Pokemon
         total_stats = sum([
             pokemon.base_hp,
             pokemon.base_attack,
             pokemon.base_defense,
             pokemon.base_speed
         ])
-        is_legendary = total_stats > 500
+        legendary_ids = [
+            144, 145, 146, 150, 151,
+            243, 244, 245, 249, 250, 251,
+            377, 378, 379, 380, 381, 382, 383, 384, 385, 386,
+            480, 481, 482, 483, 484, 485, 486, 487, 488, 489, 490, 491, 492, 493,
+            494, 638, 639, 640, 641, 642, 643, 644, 645, 646, 647, 648, 649,
+            716, 717, 718, 719, 720, 721,
+            772, 773, 785, 786, 787, 788, 789, 790, 791, 792, 793, 794, 795, 796, 
+            797, 798, 799, 800, 801, 802, 803, 804, 805, 806, 807, 808, 809,
+            888, 889, 890, 891, 892, 893, 894, 895, 896, 897, 898,
+            905, 1001, 1002, 1003, 1004, 1007, 1008, 1009, 1010, 1014, 1015, 1016, 
+            1017, 1020, 1021, 1022, 1023, 1024, 1025,
+        ]
+        is_legendary = pokemon.pokedex_number in legendary_ids
         stats_penalty = total_stats // 10
         legendary_penalty = 40 if is_legendary else 0
         catch_rate = max(5, 90 - stats_penalty - legendary_penalty)
-        
-        # Mark as attempted
-        self.has_attempted = True
-        
-        # Roll for catch
+
+        self.has_attempted = True 
         catch_roll = randint(1, 100)
         
         if catch_roll <= catch_rate:
-            # Success!
             self.env['pokedex.trainer.pokemon'].create({
                 'trainer_id': self.trainer_id.id,
                 'pokemon_id': pokemon_id,
