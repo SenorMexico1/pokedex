@@ -31,13 +31,11 @@ class Pokemon(models.Model):
     secondary_type_id = fields.Many2one('pokedex.type', string='Secondary Type')
     skill_ids = fields.Many2many('pokedex.skill', string='Skills')
     
-    # Starting stats
     base_hp = fields.Integer(string='Base HP', default=100)
     base_attack = fields.Integer(string='Base Attack', default=50)
     base_defense = fields.Integer(string='Base Defense', default=50)
     base_speed = fields.Integer(string='Base Speed', default=50)
     
-    # Additional fields from PokeAPI
     height = fields.Float(string='Height (m)', digits=(3, 1))
     weight = fields.Float(string='Weight (kg)', digits=(5, 1))
     image_url = fields.Char(string='Pokemon Image URL')
@@ -49,7 +47,6 @@ class Pokemon(models.Model):
         """Refresh Pokemon data from PokeAPI"""
         api_sync = self.env['pokedex.api.sync']
         for pokemon in self:
-            # Re-import the Pokemon data
             api_sync.import_pokemon(pokemon.pokedex_number)
         return True
     
@@ -101,20 +98,17 @@ class TrainerPokemon(models.Model):
     level = fields.Integer(string='Level', default=1)
     experience = fields.Integer(string='Experience', default=0)
     
-    # NEW FIELDS: XP tracking
     experience_next_level = fields.Integer(string='XP for Next Level', 
                                          compute='_compute_experience_next_level',
                                          store=True)
     experience_progress = fields.Char(string='XP Progress', 
                                     compute='_compute_experience_progress')
     
-    # Current stats (calculated from base + level bonuses)
     hp = fields.Integer(string='HP', compute='_compute_stats', store=True)
     attack = fields.Integer(string='Attack', compute='_compute_stats', store=True)
     defense = fields.Integer(string='Defense', compute='_compute_stats', store=True)
     speed = fields.Integer(string='Speed', compute='_compute_stats', store=True)
     
-    # Store the image from the related pokemon
     image_url = fields.Char(related='pokemon_id.image_url', string='Image URL')
     image_html = fields.Html(string='Image', compute='_compute_image_html', sanitize=False)
 
@@ -122,7 +116,6 @@ class TrainerPokemon(models.Model):
     def _compute_experience_next_level(self):
         """Compute XP needed for next level"""
         for pokemon in self:
-            # Formula: 100 * current level = XP needed for next level
             pokemon.experience_next_level = 100 * pokemon.level
     
     @api.depends('experience', 'experience_next_level')
@@ -149,16 +142,12 @@ class TrainerPokemon(models.Model):
         """Check if Pokemon should level up based on experience"""
         for pokemon in self:
             if pokemon.experience >= pokemon.experience_next_level:
-                # Calculate overflow XP to carry over
                 overflow_xp = pokemon.experience - pokemon.experience_next_level
                 
-                # Level up
                 pokemon.level += 1
                 
-                # Set experience to overflow amount
                 pokemon.experience = overflow_xp
                 
-                # Notify trainer if they have a user account
                 if pokemon.trainer_id.user_ids:
                     message = f"{pokemon.nickname or pokemon.pokemon_id.name} reached level {pokemon.level}!"
                     pokemon.trainer_id.user_ids[0].notify_info(

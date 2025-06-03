@@ -100,13 +100,11 @@ class PokedexController(http.Controller):
     def create_pokemon(self, **kwargs):
         """Create a new Pokemon"""
         try:
-            # Get required fields
             required_fields = ['name', 'pokedex_number', 'type_id']
             for field in required_fields:
                 if field not in kwargs:
                     return {'error': f'Missing required field: {field}', 'status': 400}
             
-            # Create the Pokemon
             new_pokemon = request.env['pokedex.pokemon'].create({
                 'name': kwargs.get('name'),
                 'pokedex_number': kwargs.get('pokedex_number'),
@@ -140,7 +138,6 @@ class PokedexController(http.Controller):
             if not pokemon.exists():
                 return {'error': 'Pokemon not found', 'status': 404}
             
-            # Update fields that are provided
             update_vals = {}
             allowed_fields = ['name', 'type_id', 'secondary_type_id', 'base_hp', 
                             'base_attack', 'base_defense', 'base_speed', 

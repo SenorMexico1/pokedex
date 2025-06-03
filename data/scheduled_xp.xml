@@ -24,7 +24,6 @@
             <field name="binding_model_id" ref="model_pokedex_trainer_pokemon"/>
             <field name="state">code</field>
             <field name="code">
-# Check if experience was changed and if level up is needed
 try:
     if record.experience >= record.experience_next_level:
         record.check_level_up()

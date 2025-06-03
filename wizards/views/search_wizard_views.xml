@@ -15,8 +15,6 @@
                         <group string="Search Pokemon" attrs="{'invisible': [('is_importing', '=', True)]}">
                             <field name="search_term" placeholder="e.g., 'pikachu' or '25'"/>
                         </group>
-                        
-                        <!-- Progress Bar - Shows during import -->
                         <group attrs="{'invisible': [('is_importing', '=', False)]}">
                             <field name="import_progress" widget="progressbar" nolabel="1"/>
                         </group>
@@ -28,7 +26,7 @@
                             </div>
                         </group>
                         
-                        <!-- Import Log - Shows during and after import -->
+                        <!-- Import Log -->
                         <group string="Import Details" attrs="{'invisible': [('import_log', '=', False)]}">
                             <field name="import_log" readonly="1" nolabel="1" 
                                    widget="text" 
@@ -37,21 +35,21 @@
                     </sheet>
                     
                     <footer>
-                        <!-- Search button - only visible when not importing -->
+                        <!-- Search button -->
                         <button name="search_pokemon" 
                                 string="Search" 
                                 type="object" 
                                 class="btn-primary"
                                 attrs="{'invisible': [('is_importing', '=', True)]}"/>
                         
-                        <!-- Import button - only visible when not importing -->
+                        <!-- Import button -->
                         <button name="import_batch" 
                                 string="Import ALL Pokemon" 
                                 type="object" 
                                 class="btn-warning"
                                 attrs="{'invisible': [('is_importing', '=', True)]}"/>
                         
-                        <!-- Refresh button - only visible during import (NO UNDERSCORE) -->
+                        <!-- Refresh button -->
                         <button name="refresh_wizard" 
                                 string="Refresh Progress" 
                                 type="object" 

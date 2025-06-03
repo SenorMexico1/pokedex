@@ -8,7 +8,6 @@
             <field name="binding_model_id" ref="model_pokedex_trainer_pokemon"/>
             <field name="state">code</field>
             <field name="code">
-# Check if Pokemon has enough XP to level up
 if record.experience >= (100 * record.level):
     record.write({'experience': 0})
     record.level_up()

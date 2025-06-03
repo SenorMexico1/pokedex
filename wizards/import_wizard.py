@@ -8,7 +8,6 @@ class PokemonImportWizard(models.TransientModel):
     _name = 'pokedex.import.wizard'
     _description = 'Import Pokemon from PokeAPI'
     
-    # Import options
     import_option = fields.Selection([
         ('gen1', 'Generation 1 (Kanto: 1-151)'),
         ('gen2', 'Generation 2 (Johto: 152-251)'),
@@ -23,11 +22,9 @@ class PokemonImportWizard(models.TransientModel):
         ('custom', 'Custom Range')
     ], string='Import Option', required=True, default='missing')
     
-    # Custom range fields
     start_id = fields.Integer(string='Start ID', default=1)
     end_id = fields.Integer(string='End ID', default=151)
     
-    # Status fields
     total_pokemon = fields.Integer(string='Total Pokemon in Database', 
                                   compute='_compute_stats', store=False)
     missing_count = fields.Integer(string='Missing Pokemon Count', 
@@ -40,7 +37,6 @@ class PokemonImportWizard(models.TransientModel):
             total = self.env['pokedex.pokemon'].search_count([])
             wizard.total_pokemon = total
             
-            # Calculate missing Pokemon (assuming max 898 for Gen 8)
             existing_ids = self.env['pokedex.pokemon'].search([]).mapped('pokedex_number')
             missing_ids = set(range(1, 899)) - set(existing_ids)
             wizard.missing_count = len(missing_ids)
@@ -63,7 +59,6 @@ class PokemonImportWizard(models.TransientModel):
         if self.import_option in ranges:
             self.start_id, self.end_id = ranges[self.import_option]
         elif self.import_option == 'missing':
-            # Set to full range for missing check
             self.start_id, self.end_id = 1, 898
     
     def action_check_missing(self):
@@ -107,10 +102,8 @@ class PokemonImportWizard(models.TransientModel):
         skipped_count = 0
         failed_count = 0
         
-        # Get existing Pokemon IDs for efficiency
         existing_ids = self.env['pokedex.pokemon'].search([]).mapped('pokedex_number')
         
-        # Determine which IDs to import
         if self.import_option == 'missing':
             ids_to_import = []
             for pokemon_id in range(self.start_id, self.end_id + 1):
@@ -123,7 +116,6 @@ class PokemonImportWizard(models.TransientModel):
             self.import_message = "All Pokemon in this range are already imported!"
             return self._return_wizard()
         
-        # Show progress notification
         total_to_import = len(ids_to_import)
         self.env['bus.bus'].sendone(
             (self._cr.dbname, 'res.partner', self.env.user.partner_id.id),
@@ -134,7 +126,6 @@ class PokemonImportWizard(models.TransientModel):
             }
         )
         
-        # Import Pokemon
         for i, pokemon_id in enumerate(ids_to_import):
             try:
                 if pokemon_id in existing_ids and self.import_option != 'missing':
@@ -144,7 +135,6 @@ class PokemonImportWizard(models.TransientModel):
                 api_sync.import_pokemon(pokemon_id)
                 imported_count += 1
                 
-                # Send progress update every 10 Pokemon
                 if (i + 1) % 10 == 0:
                     progress = ((i + 1) / total_to_import) * 100
                     self.env['bus.bus'].sendone(
@@ -160,16 +150,14 @@ class PokemonImportWizard(models.TransientModel):
                 failed_count += 1
                 _logger.error(f"Failed to import Pokemon {pokemon_id}: {str(e)}")
         
-        # Set final message
         self.import_message = (
             f"Import completed!\n"
-            f"✓ Imported: {imported_count} Pokemon\n"
-            f"⚠ Skipped (already exists): {skipped_count} Pokemon\n"
-            f"✗ Failed: {failed_count} Pokemon\n"
+            f"Imported: {imported_count} Pokemon\n"
+            f"Skipped (already exists): {skipped_count} Pokemon\n"
+            f"Failed: {failed_count} Pokemon\n"
             f"Total in database: {self.env['pokedex.pokemon'].search_count([])}"
         )
         
-        # Show completion notification
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',

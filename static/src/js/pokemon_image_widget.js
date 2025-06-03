@@ -42,7 +42,6 @@ odoo.define('pokedex_app.pokemon_image_widget', function (require) {
                     'alt': 'Pokemon Image'
                 });
                 
-                // Handle image loading errors
                 $img.on('error', function () {
                     $(this).attr('src', '/pokedex_app/static/description/icon.png');
                 });
@@ -62,7 +61,6 @@ odoo.define('pokedex_app.pokemon_image_widget', function (require) {
         }
     });
     
-    // Register the widget
     fieldRegistry.add('pokedex_image', PokemonImageWidget);
     
     return PokemonImageWidget;

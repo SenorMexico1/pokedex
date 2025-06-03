@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
   <data>
-    <!-- Add this at the beginning of your views.xml, right after <data> -->
     <record id="pokedex_inline_styles" model="ir.ui.view">
         <field name="name">pokedex.inline.styles</field>
         <field name="type">qweb</field>
@@ -346,11 +345,8 @@
                 <field name="trainer_id"/>
                 <filter string="My Pokemon" name="my_pokemon" 
                         domain="[('trainer_id.user_ids', 'in', uid)]"/>
-                <separator/>
                 <filter string="High Level" name="high_level" 
                         domain="[('level', '>=', 50)]"/>
-                <filter string="Ready to Level Up" name="ready_level" 
-                        domain="[('experience', '>=', 'experience_next_level')]"/>
                 <group expand="0" string="Group By">
                     <filter string="Trainer" name="group_by_trainer" context="{'group_by': 'trainer_id'}"/>
                     <filter string="Pokemon" name="groupby_pokemon" context="{'group_by': 'pokemon_id'}"/>
@@ -386,7 +382,6 @@
     </record>
     
     <!-- Actions and Menus -->
-    <!-- UPDATED: Added context to group by type by default -->
     <record model="ir.actions.act_window" id="pokedex_pokemon_action">
       <field name="name">Pokemon</field>
       <field name="res_model">pokedex.pokemon</field>
@@ -441,7 +436,7 @@
               id="pokedex_menu_root"
               action="pokedex_pokemon_action"/>
     
-    <!-- First level menu items - REORGANIZED -->
+    <!-- First level menu items -->
     <menuitem name="Pokemon" 
               id="pokedex_pokemon_menu" 
               parent="pokedex_menu_root"
@@ -452,7 +447,7 @@
               parent="pokedex_menu_root"
               sequence="20"/>
               
-    <!-- NEW: Tools menu for import/search functions -->
+    <!-- Tools menu for import/search functions -->
     <menuitem name="Tools" 
               id="pokedex_tools_menu" 
               parent="pokedex_menu_root"
@@ -463,15 +458,14 @@
               parent="pokedex_menu_root"
               sequence="100"/>
     
-    <!-- Second level menu items -->
-    <!-- Pokemon submenu -->
+    <!-- Second level menu items - Pokemon submenu -->
     <menuitem name="All Pokemon" 
               id="pokedex_pokemon_list_menu" 
               parent="pokedex_pokemon_menu" 
               action="pokedex_pokemon_action"
               sequence="10"/>
               
-    <!-- NEW: Moved catch wizard under Pokemon menu -->
+    <!-- Moved catch wizard under Pokemon menu -->
     <menuitem id="menu_catch_pokemon_wizard"
               name="Catch Pokemon"
               parent="pokedex_pokemon_menu"
@@ -497,13 +491,6 @@
               parent="pokedex_tools_menu"
               action="pokedex_search_wizard_action"
               sequence="10"/>
-              
-    <!-- This will be for the new import wizard when you add it -->
-    <!-- <menuitem id="menu_import_pokemon_wizard"
-              name="Import Pokemon"  
-              parent="pokedex_tools_menu"
-              action="pokedex_import_wizard_action"
-              sequence="20"/> -->
     
     <!-- Configuration submenu -->
     <menuitem name="Types" 
@@ -529,11 +516,5 @@
               parent="pokedex_api_menu" 
               action="action_sync_all_types"
               sequence="10"/>
-
-    <menuitem name="Sync Pokemon (Legacy)" 
-              id="pokedex_sync_pokemon_menu" 
-              parent="pokedex_api_menu" 
-              action="action_sync_pokemon_batch"
-              sequence="20"/>
   </data>
 </odoo>

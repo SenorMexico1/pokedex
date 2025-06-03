@@ -7,7 +7,7 @@ class TestPokemon(common.TransactionCase):
         """Set up test data"""
         super(TestPokemon, self).setUp()
         
-        # Create test types
+        # Types test
         self.type_fire = self.env['pokedex.type'].create({
             'name': 'Fire',
             'color': '#EE8130'
@@ -18,7 +18,7 @@ class TestPokemon(common.TransactionCase):
             'color': '#A98FF3'
         })
         
-        # Create test skill
+        # Skills test
         self.skill_ember = self.env['pokedex.skill'].create({
             'name': 'Ember',
             'type_id': self.type_fire.id,
@@ -26,7 +26,7 @@ class TestPokemon(common.TransactionCase):
             'description': 'A basic fire attack'
         })
         
-        # Create test Pokemon
+        # Pokemon test
         self.pokemon_charmander = self.env['pokedex.pokemon'].create({
             'name': 'Charmander',
             'pokedex_number': 4,
@@ -38,7 +38,7 @@ class TestPokemon(common.TransactionCase):
             'skill_ids': [(4, self.skill_ember.id)]
         })
         
-        # Create test trainer
+        # Trainer test
         self.trainer = self.env['res.partner'].create({
             'name': 'Ash Ketchum',
             'is_trainer': True
@@ -46,13 +46,13 @@ class TestPokemon(common.TransactionCase):
     
     def test_pokemon_creation(self):
         """Test Pokemon creation"""
-        # Check that Pokemon was created correctly
+        # Pokemon creation check
         self.assertEqual(self.pokemon_charmander.name, 'Charmander')
         self.assertEqual(self.pokemon_charmander.pokedex_number, 4)
         self.assertEqual(self.pokemon_charmander.type_id.name, 'Fire')
         self.assertEqual(self.pokemon_charmander.base_hp, 39)
         
-        # Check that skill is linked
+        # Is the skill linked?
         self.assertIn(self.skill_ember, self.pokemon_charmander.skill_ids)
     
     def test_trainer_pokemon_creation(self):
@@ -73,22 +73,23 @@ class TestPokemon(common.TransactionCase):
         self.assertEqual(trainer_pokemon.level, 5)
         
         # Check computed stats
-        expected_hp = self.pokemon_charmander.base_hp + (5 * 5)  # base + (level * 5)
+        expected_hp = self.pokemon_charmander.base_hp + (5 * 5)
         self.assertEqual(trainer_pokemon.hp, expected_hp)
     
     def test_pokemon_count_computation(self):
         """Test trainer's Pokemon count computation"""
-        # Initially, trainer should have 0 Pokemon
+
+        # Checks trainers initial Pokemon count
         self.assertEqual(self.trainer.pokemon_count, 0)
         
-        # Add a Pokemon
+        # Add a Pokemon to created trainer
         self.env['pokedex.trainer.pokemon'].create({
             'trainer_id': self.trainer.id,
             'pokemon_id': self.pokemon_charmander.id,
             'level': 5
         })
         
-        # Check count updated
+        # Checks the updated Pokemon count
         self.assertEqual(self.trainer.pokemon_count, 1)
     
     def test_level_up(self):
@@ -108,10 +109,10 @@ class TestPokemon(common.TransactionCase):
         # Level up
         trainer_pokemon.level_up()
         
-        # Check level increased
+        # Check increased leve
         self.assertEqual(trainer_pokemon.level, 6)
         
-        # Check stats increased
+        # Check increased stats
         self.assertGreater(trainer_pokemon.hp, initial_hp)
         self.assertGreater(trainer_pokemon.attack, initial_attack)
     
@@ -123,11 +124,10 @@ class TestPokemon(common.TransactionCase):
             'pokemon_id': self.pokemon_charmander.id
         })
         
-        # Check wizard created
+        # Check created wizard
         self.assertEqual(wizard.trainer_id.id, self.trainer.id)
         self.assertEqual(wizard.pokemon_id.id, self.pokemon_charmander.id)
         
-        # Note: We can't test the random catch success, but we can test the wizard exists
         self.assertTrue(wizard.exists())
     
     def test_type_relationships(self):
@@ -137,14 +137,14 @@ class TestPokemon(common.TransactionCase):
             'weakness_against': [(4, self.type_flying.id)]
         })
         
-        # Check relationship
+        # Check relationships
         self.assertIn(self.type_flying, self.type_fire.weakness_against)
     
     def test_api_sync_model(self):
         """Test API sync model exists and has required methods"""
         api_sync = self.env['pokedex.api.sync']
         
-        # Check model exists
+        # Checks if the model exists
         self.assertTrue(hasattr(api_sync, '_get_pokemon_from_api'))
         self.assertTrue(hasattr(api_sync, 'import_pokemon'))
         self.assertTrue(hasattr(api_sync, '_get_type_color'))
@@ -153,5 +153,5 @@ class TestPokemon(common.TransactionCase):
         """Test experience cron model exists"""
         exp_cron = self.env['pokedex.experience.cron']
         
-        # Check model exists and has the award experience method
+        # Checks if the model exists and has the award experience method
         self.assertTrue(hasattr(exp_cron, '_award_experience'))
