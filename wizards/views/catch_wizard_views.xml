@@ -81,8 +81,7 @@
                         <!-- Throw Pokeball button - only visible if not attempted and not in cooldown -->
                         <button name="attempt_catch" string="Throw Pokeball!" 
                                 type="object" class="btn-primary"
-                                attrs="{'invisible': ['|', ('has_attempted', '=', True), ('can_catch', '=', False)]}"
-                                icon="fa-bullseye"/>
+                                attrs="{'invisible': ['|', ('has_attempted', '=', True), ('can_catch', '=', False)]}"/>
                         
                         <!-- Find New Pokemon button - only visible after attempt -->
                         <button name="find_new_pokemon" string="Find Another Pokemon" 

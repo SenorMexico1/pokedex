@@ -516,5 +516,10 @@
               parent="pokedex_api_menu" 
               action="action_sync_all_types"
               sequence="10"/>
+    <menuitem name="Sync Pokemon" 
+              id="pokemon_sync_pokemon_menu" 
+              parent="pokedex_api_menu" 
+              action="action_sync_pokemon_batch"
+              sequence="10"/>
   </data>
 </odoo>
