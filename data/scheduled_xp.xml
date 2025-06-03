@@ -24,9 +24,10 @@
             <field name="binding_model_id" ref="model_pokedex_trainer_pokemon"/>
             <field name="state">code</field>
             <field name="code">
-# Check if experience was changed
-if record.experience >= record.experience_next_level:
-    record.check_level_up()
+# Check if experience was changed and if level up is needed
+if hasattr(record, 'experience') and hasattr(record, 'experience_next_level'):
+    if record.experience >= record.experience_next_level:
+        record.check_level_up()
             </field>
         </record>
         
@@ -35,8 +36,7 @@ if record.experience >= record.experience_next_level:
             <field name="name">Pokemon Experience Change Trigger</field>
             <field name="model_id" ref="model_pokedex_trainer_pokemon"/>
             <field name="trigger">on_write</field>
-            <field name="filter_domain">[('experience', '>', 0)]</field>
-            <field name="trigger_field_ids" eval="[(4, ref('pokedex_app.field_pokedex_trainer_pokemon__experience'))]"/>
+            <field name="filter_domain">[]</field>
             <field name="action_server_id" ref="action_check_pokemon_level_up"/>
             <field name="active" eval="True"/>
         </record>
