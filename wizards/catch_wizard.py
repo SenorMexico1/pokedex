@@ -11,7 +11,6 @@ class PokemonCatchWizard(models.TransientModel):
                                 required=True, default=lambda self: self.env.user.partner_id)
     pokemon_id = fields.Many2one('pokedex.pokemon', string='Wild Pokemon Appeared!', readonly=True)
     
-    # HACK: Store the Pokemon ID as a regular field that will persist
     target_pokemon_id = fields.Integer(string='Target Pokemon ID')
     
     # Display fields
@@ -27,10 +26,13 @@ class PokemonCatchWizard(models.TransientModel):
     catch_success = fields.Boolean(string='Catch Success', readonly=True, default=False)
     result_message = fields.Char(string='Result', readonly=True)
     has_attempted = fields.Boolean(string='Has Attempted', default=False)
+    image_html = fields.Html(string='Image', compute='_compute_image_html', sanitize=False)
+
+
+    # Cooldown tracking
     cooldown_message = fields.Char(string='Cooldown Message', readonly=True)
     can_catch = fields.Boolean(string='Can Catch', default=True)
-
-
+    
     @api.model
     def default_get(self, fields_list):
         """Set initial Pokemon when wizard opens"""
@@ -122,13 +124,15 @@ class PokemonCatchWizard(models.TransientModel):
         self.ensure_one()
         
         if not self.can_catch:
-            return{'type': 'ir.actions.do_nothing',}
-
+            return {'type': 'ir.actions.do_nothing'}
+        
         if self.has_attempted:
             return {'type': 'ir.actions.do_nothing'}
         
+        # Update last catch attempt time
         self.trainer_id.last_catch_attempt = datetime.now()
-
+        
+        # HACK: Use the stored target_pokemon_id instead of pokemon_id
         pokemon_id = self.target_pokemon_id
         if not pokemon_id:
             raise UserError("No Pokemon targeted!")
@@ -183,6 +187,7 @@ class PokemonCatchWizard(models.TransientModel):
                     'message': message,
                     'type': 'success',
                     'sticky': False,
+                    'next': {'type': 'ir.actions.act_window_close'}
                 }
             }
         else:
@@ -204,10 +209,18 @@ class PokemonCatchWizard(models.TransientModel):
                     'message': message,
                     'type': 'warning',
                     'sticky': False,
+                    'next': {'type': 'ir.actions.act_window_close'}
                 }
             }
     
     def find_new_pokemon(self):
         """Close the wizard and open a new one with a different Pokemon"""
-        # Simply close this wizard and let user open a new one
         return {'type': 'ir.actions.act_window_close'}
+
+    @api.depends('pokemon_image')
+    def _compute_image_html(self):
+        for wizard in self:
+            if wizard.pokemon_image:
+                wizard.image_html = '<img src="%s" style="max-width: 300px; max-height: 300px; border-radius: 10px;" />' % wizard.pokemon_image
+            else:
+                wizard.image_html = '<p>No image</p>'

@@ -25,10 +25,12 @@
             <field name="state">code</field>
             <field name="code">
 # Check if experience was changed and if level up is needed
-if hasattr(record, 'experience') and hasattr(record, 'experience_next_level'):
+try:
     if record.experience >= record.experience_next_level:
         record.check_level_up()
-            </field>
+except:
+    pass
+</field>
         </record>
         
         <!-- Trigger when experience changes -->

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <!-- Fixed Catch Wizard Form View -->
+        <!-- Catch Wizard Form View with Hidden Target Field and Cooldown -->
         <record id="pokedex_catch_wizard_form" model="ir.ui.view">
             <field name="name">pokedex.catch.wizard.form</field>
             <field name="model">pokedex.catch.wizard</field>
@@ -11,18 +11,22 @@
                     <field name="has_attempted" invisible="1"/>
                     <field name="is_legendary" invisible="1"/>
                     <field name="can_catch" invisible="1"/>
+                    <!-- HACK: Hidden field to preserve Pokemon ID -->
+                    <field name="target_pokemon_id" invisible="1"/>
                     
                     <sheet>
                         <!-- Hidden trainer field -->
                         <field name="trainer_id" invisible="1"/>
+                        
                         <!-- Cooldown Message -->
                         <group attrs="{'invisible': [('can_catch', '=', True)]}">
                             <div class="alert alert-warning" role="alert" style="text-align: center;">
                                 <h3>Cooldown Active!</h3>
                                 <field name="cooldown_message" readonly="1" nolabel="1" 
-                                    style="font-size: 18px;"/>
+                                       style="font-size: 18px;"/>
                             </div>
                         </group>
+                        
                         <!-- Wild Pokemon Encounter -->
                         <div class="text-center" attrs="{'invisible': ['|', ('pokemon_id', '=', False), ('can_catch', '=', False)]}">
                             <h2 attrs="{'invisible': [('pokemon_id', '=', False)]}">
@@ -34,14 +38,13 @@
                             <!-- Legendary indicator -->
                             <div attrs="{'invisible': [('is_legendary', '=', False)]}" 
                                  style="color: #FFD700; font-size: 18px; margin-bottom: 10px;">
-                                LEGENDARY POKEMON
+                                ⭐ LEGENDARY POKEMON ⭐
                             </div>
                         </div>
                         
                         <!-- Pokemon Image -->
                         <div class="text-center" attrs="{'invisible': ['|', ('pokemon_id', '=', False), ('can_catch', '=', False)]}">
-                            <field name="pokemon_image" widget="image" class="oe_avatar" 
-                                   nolabel="1" style="max-width: 300px; max-height: 300px;"/>
+                            <field name="image_html" widget="html" readonly="1" nolabel="1"/>
                         </div>
                         
                         <!-- Pokemon Info in two columns -->
@@ -76,10 +79,11 @@
                     </sheet>
                     
                     <footer>
-                        <!-- Throw Pokeball button - only visible if not attempted -->
+                        <!-- Throw Pokeball button - only visible if not attempted and not in cooldown -->
                         <button name="attempt_catch" string="Throw Pokeball!" 
-                            type="object" class="btn-primary"
-                            attrs="{'invisible': ['|', ('has_attempted', '=', True), ('can_catch', '=', False)]}"/>
+                                type="object" class="btn-primary"
+                                attrs="{'invisible': ['|', ('has_attempted', '=', True), ('can_catch', '=', False)]}"
+                                icon="fa-bullseye"/>
                         
                         <!-- Find New Pokemon button - only visible after attempt -->
                         <button name="find_new_pokemon" string="Find Another Pokemon" 
@@ -93,12 +97,19 @@
                 </form>
             </field>
         </record>
+        <!-- Catch Pokemon Action - Define it here before the menu -->
+        <record id="pokedex_catch_wizard_action" model="ir.actions.act_window">
+            <field name="name">Catch Pokemon</field>
+            <field name="res_model">pokedex.catch.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
         
-        <!-- Menu item remains the same -->
+        <!-- Menu item for catching Pokemon -->
         <menuitem id="menu_catch_pokemon_wizard"
                   name="Catch Pokemon"
                   parent="pokedex_pokemon_menu"
                   action="pokedex_catch_wizard_action"
-                  sequence="10"/>
+                  sequence="20"/>
     </data>
 </odoo>
