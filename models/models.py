@@ -72,7 +72,8 @@ class Trainer(models.Model):
     trainer_level = fields.Integer(string='Trainer Level', default=1)
     partner_gid = fields.Integer(string='Partner GID')
     additional_info = fields.Text(string='Additional Info')
-    
+    last_catch_attempt = fields.Datetime(string='Last Catch Attempt')
+
     @api.depends('trainer_pokemon_ids')
     def _compute_pokemon_count(self):
         for trainer in self:

@@ -10,13 +10,21 @@
                     <field name="catch_success" invisible="1"/>
                     <field name="has_attempted" invisible="1"/>
                     <field name="is_legendary" invisible="1"/>
+                    <field name="can_catch" invisible="1"/>
                     
                     <sheet>
                         <!-- Hidden trainer field -->
                         <field name="trainer_id" invisible="1"/>
-                        
+                        <!-- Cooldown Message -->
+                        <group attrs="{'invisible': [('can_catch', '=', True)]}">
+                            <div class="alert alert-warning" role="alert" style="text-align: center;">
+                                <h3>Cooldown Active!</h3>
+                                <field name="cooldown_message" readonly="1" nolabel="1" 
+                                    style="font-size: 18px;"/>
+                            </div>
+                        </group>
                         <!-- Wild Pokemon Encounter -->
-                        <div class="text-center">
+                        <div class="text-center" attrs="{'invisible': ['|', ('pokemon_id', '=', False), ('can_catch', '=', False)]}">
                             <h2 attrs="{'invisible': [('pokemon_id', '=', False)]}">
                                 <field name="pokemon_id" readonly="1" nolabel="1" 
                                        options="{'no_open': True, 'no_create': True}"
@@ -31,13 +39,13 @@
                         </div>
                         
                         <!-- Pokemon Image -->
-                        <div class="text-center" attrs="{'invisible': [('pokemon_id', '=', False)]}">
+                        <div class="text-center" attrs="{'invisible': ['|', ('pokemon_id', '=', False), ('can_catch', '=', False)]}">
                             <field name="pokemon_image" widget="image" class="oe_avatar" 
                                    nolabel="1" style="max-width: 300px; max-height: 300px;"/>
                         </div>
                         
                         <!-- Pokemon Info in two columns -->
-                        <group col="2" attrs="{'invisible': [('pokemon_id', '=', False)]}">
+                        <group col="2" attrs="{'invisible': ['|', ('pokemon_id', '=', False), ('can_catch', '=', False)]}">
                             <group>
                                 <field name="pokemon_type" readonly="1" string="Type"/>
                                 <div class="text-muted">
@@ -70,9 +78,8 @@
                     <footer>
                         <!-- Throw Pokeball button - only visible if not attempted -->
                         <button name="attempt_catch" string="Throw Pokeball!" 
-                                type="object" class="btn-primary"
-                                attrs="{'invisible': [('has_attempted', '=', True)]}"
-                                icon="fa-bullseye"/>
+                            type="object" class="btn-primary"
+                            attrs="{'invisible': ['|', ('has_attempted', '=', True), ('can_catch', '=', False)]}"/>
                         
                         <!-- Find New Pokemon button - only visible after attempt -->
                         <button name="find_new_pokemon" string="Find Another Pokemon" 
@@ -85,15 +92,6 @@
                     </footer>
                 </form>
             </field>
-        </record>
-        
-        <!-- Action remains the same -->
-        <record id="pokedex_catch_wizard_action" model="ir.actions.act_window">
-            <field name="name">Catch Pokemon</field>
-            <field name="res_model">pokedex.catch.wizard</field>
-            <field name="view_mode">form</field>
-            <field name="target">new</field>
-            <field name="context">{'default_trainer_id': active_id}</field>
         </record>
         
         <!-- Menu item remains the same -->

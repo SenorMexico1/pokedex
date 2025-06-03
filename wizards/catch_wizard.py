@@ -1,6 +1,7 @@
 from odoo import models, fields, api
 from odoo.exceptions import UserError
 from random import randint, choice
+from datetime import datetime, timedelta
 
 class PokemonCatchWizard(models.TransientModel):
     _name = 'pokedex.catch.wizard'
@@ -26,13 +27,36 @@ class PokemonCatchWizard(models.TransientModel):
     catch_success = fields.Boolean(string='Catch Success', readonly=True, default=False)
     result_message = fields.Char(string='Result', readonly=True)
     has_attempted = fields.Boolean(string='Has Attempted', default=False)
-    
+    cooldown_message = fields.Char(string='Cooldown Message', readonly=True)
+    can_catch = fields.Boolean(string='Can Catch', default=True)
+
+
     @api.model
     def default_get(self, fields_list):
         """Set initial Pokemon when wizard opens"""
         res = super().default_get(fields_list)
         
+        # Get the trainer (current user by default)
         trainer = self.env.user.partner_id
+        
+        # Make sure user is a trainer
+        if not trainer.is_trainer:
+            trainer.is_trainer = True
+        
+        # Check cooldown (15 minutes)
+        if trainer.last_catch_attempt:
+            time_since_last = datetime.now() - trainer.last_catch_attempt
+            cooldown_remaining = timedelta(minutes=15) - time_since_last
+            
+            if cooldown_remaining.total_seconds() > 0:
+                minutes = int(cooldown_remaining.total_seconds() // 60)
+                seconds = int(cooldown_remaining.total_seconds() % 60)
+                res['cooldown_message'] = f"Please wait {minutes}m {seconds}s before catching another Pokemon!"
+                res['can_catch'] = False
+                res['result_message'] = "You need to wait before catching another Pokemon."
+                return res
+        
+        # If cooldown passed, find a wild Pokemon
         owned_pokemon_ids = trainer.trainer_pokemon_ids.mapped('pokemon_id.id')
         available_pokemon = self.env['pokedex.pokemon'].search([
             ('id', 'not in', owned_pokemon_ids)
@@ -45,6 +69,7 @@ class PokemonCatchWizard(models.TransientModel):
         res['pokemon_id'] = random_pokemon.id
         res['target_pokemon_id'] = random_pokemon.id  # Store the ID
         res['result_message'] = f"A wild {random_pokemon.name} appeared!"
+        res['can_catch'] = True
         
         return res
     
@@ -96,10 +121,14 @@ class PokemonCatchWizard(models.TransientModel):
         """Attempt to catch the Pokemon"""
         self.ensure_one()
         
+        if not self.can_catch:
+            return{'type': 'ir.actions.do_nothing',}
+
         if self.has_attempted:
             return {'type': 'ir.actions.do_nothing'}
         
-        # HACK: Use the stored target_pokemon_id instead of pokemon_id
+        self.trainer_id.last_catch_attempt = datetime.now()
+
         pokemon_id = self.target_pokemon_id
         if not pokemon_id:
             raise UserError("No Pokemon targeted!")
@@ -111,7 +140,6 @@ class PokemonCatchWizard(models.TransientModel):
         pokemon_name = pokemon.name
         
         # Get catch rate for the target Pokemon
-        # We need to recalculate since the form might have a different Pokemon
         total_stats = sum([
             pokemon.base_hp,
             pokemon.base_attack,
