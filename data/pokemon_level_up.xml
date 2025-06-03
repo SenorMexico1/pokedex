@@ -10,14 +10,10 @@
             <field name="code">
 # Check if Pokemon has enough XP to level up
 if record.experience >= (100 * record.level):
-    # Reset experience and increase level using write() method
     record.write({'experience': 0})
     record.level_up()
     
-    # Since we're repurposing res.partner as trainers (per README hint),
-    # we'll use the existing user_ids field to notify any linked users
     if record.trainer_id.user_ids:
-        # Get the first user linked to this trainer/partner
         user = record.trainer_id.user_ids[0]
         user.notify_info(
             title="Pokemon Level Up!",

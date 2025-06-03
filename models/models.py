@@ -90,6 +90,13 @@ class TrainerPokemon(models.Model):
     level = fields.Integer(string='Level', default=1)
     experience = fields.Integer(string='Experience', default=0)
     
+    # NEW FIELDS: XP tracking
+    experience_next_level = fields.Integer(string='XP for Next Level', 
+                                         compute='_compute_experience_next_level',
+                                         store=True)
+    experience_progress = fields.Char(string='XP Progress', 
+                                    compute='_compute_experience_progress')
+    
     # Current stats (calculated from base + level bonuses)
     hp = fields.Integer(string='HP', compute='_compute_stats', store=True)
     attack = fields.Integer(string='Attack', compute='_compute_stats', store=True)
@@ -99,14 +106,53 @@ class TrainerPokemon(models.Model):
     # Store the image from the related pokemon
     image_url = fields.Char(related='pokemon_id.image_url', string='Image URL')
     
+    @api.depends('level')
+    def _compute_experience_next_level(self):
+        """Compute XP needed for next level"""
+        for pokemon in self:
+            # Formula: 100 * current level = XP needed for next level
+            pokemon.experience_next_level = 100 * pokemon.level
+    
+    @api.depends('experience', 'experience_next_level')
+    def _compute_experience_progress(self):
+        """Show XP progress as a string"""
+        for pokemon in self:
+            pokemon.experience_progress = f"{pokemon.experience}/{pokemon.experience_next_level}"
+    
     @api.depends('pokemon_id', 'level')
     def _compute_stats(self):
         for pokemon in self:
-            pokemon.hp = pokemon.pokemon_id.base_hp + (pokemon.level * 5)
-            pokemon.attack = pokemon.pokemon_id.base_attack + (pokemon.level * 2)
-            pokemon.defense = pokemon.pokemon_id.base_defense + (pokemon.level * 2)
-            pokemon.speed = pokemon.pokemon_id.base_speed + (pokemon.level * 2)
+            if pokemon.pokemon_id:
+                pokemon.hp = pokemon.pokemon_id.base_hp + (pokemon.level * 5)
+                pokemon.attack = pokemon.pokemon_id.base_attack + (pokemon.level * 2)
+                pokemon.defense = pokemon.pokemon_id.base_defense + (pokemon.level * 2)
+                pokemon.speed = pokemon.pokemon_id.base_speed + (pokemon.level * 2)
     
     def level_up(self):
+        """Level up the Pokemon (kept for backward compatibility)"""
         for pokemon in self:
             pokemon.level += 1
+    
+    def check_level_up(self):
+        """Check if Pokemon should level up based on experience"""
+        for pokemon in self:
+            if pokemon.experience >= pokemon.experience_next_level:
+                # Calculate overflow XP to carry over
+                overflow_xp = pokemon.experience - pokemon.experience_next_level
+                
+                # Level up
+                pokemon.level += 1
+                
+                # Set experience to overflow amount
+                pokemon.experience = overflow_xp
+                
+                # Notify trainer if they have a user account
+                if pokemon.trainer_id.user_ids:
+                    message = f"{pokemon.nickname or pokemon.pokemon_id.name} reached level {pokemon.level}!"
+                    pokemon.trainer_id.user_ids[0].notify_info(
+                        title="Pokemon Level Up!",
+                        message=message
+                    )
+                
+                return True
+        return False

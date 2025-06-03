@@ -8,7 +8,7 @@ class PokemonSearchWizard(models.TransientModel):
     _name = 'pokedex.search.wizard'
     _description = 'Search and Import Pokemon from PokeAPI'
     
-    # Search field - NOT REQUIRED
+    # Search field
     search_term = fields.Char(string='Pokemon Name or ID',
                              help="Enter a Pokemon name (e.g., 'pikachu') or ID (e.g., '25')")
     
@@ -16,7 +16,7 @@ class PokemonSearchWizard(models.TransientModel):
     found_pokemon_id = fields.Many2one('pokedex.pokemon', string='Found Pokemon', readonly=True)
     search_message = fields.Text(string='Status', readonly=True)  # Changed to Text
     
-    # NEW Progress tracking fields
+    # Progress tracking fields
     import_progress = fields.Float(string='Progress', default=0.0)
     import_log = fields.Text(string='Import Log', default='')
     is_importing = fields.Boolean(string='Import in Progress', default=False)
@@ -28,7 +28,7 @@ class PokemonSearchWizard(models.TransientModel):
         if not self.search_term:
             raise UserError("Please enter a Pokemon name or ID to search!")
         
-        # First, try to find the Pokemon in our database
+        # Finds the Pokemon in the database
         existing_pokemon = self.env['pokedex.pokemon'].search([
             '|', 
             ('name', 'ilike', self.search_term),
